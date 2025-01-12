@@ -8,8 +8,9 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import Authenticated from '@/Layouts/AuthenticatedLayout';
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 import {
     Activity,
     BadgeCheck,
@@ -23,7 +24,7 @@ import {
     Search,
     Trash2,
 } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 
 interface Parcours {
     id: number;
@@ -66,34 +67,164 @@ interface Program {
     chapitres: Chapter[];
 }
 
-const ChapterCard = ({ chapter }: { chapter: Chapter }) => {
+const ChapterCard = ({
+    chapter,
+    program,
+}: {
+    chapter: Chapter;
+    program: Program;
+}) => {
     const [isExpanded, setIsExpanded] = React.useState(false);
 
     return (
         <div className="overflow-hidden rounded-lg border">
-            <button
-                onClick={() => setIsExpanded(!isExpanded)}
-                className="flex w-full items-center justify-between bg-gray-50 p-3 transition-colors hover:bg-gray-100"
-            >
-                <div className="flex items-center gap-3">
-                    <BookOpen className="h-4 w-4 text-gray-600" />
-                    <span className="text-sm font-medium text-gray-800">
-                        {chapter.title}
-                    </span>
-                </div>
-                <div className="flex items-center gap-2">
-                    {chapter.isFinished ? (
-                        <BadgeCheck className="h-5 w-5 text-green-500" />
-                    ) : (
-                        <ChevronRight className="h-5 w-5 text-gray-400" />
-                    )}
-                    {chapter.activites.length > 0 && (
-                        <ChevronDown
-                            className={`h-4 w-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-                        />
-                    )}
-                </div>
-            </button>
+            <div className="flex w-full items-center justify-between bg-gray-50 p-3">
+                <button
+                    onClick={() => setIsExpanded(!isExpanded)}
+                    className="flex flex-1 items-center justify-between"
+                >
+                    <div className="flex items-center gap-3">
+                        <BookOpen className="h-4 w-4 text-gray-600" />
+                        <span className="text-sm font-medium text-gray-800">
+                            {chapter.title}
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        {chapter.isFinished ? (
+                            <BadgeCheck className="h-5 w-5 text-green-500" />
+                        ) : (
+                            <BadgeCheck className="h-5 w-5 text-gray-500" />
+                        )}
+                        {/* {chapter.activites.length > 0 && (
+                            <ChevronDown
+                                className={`h-4 w-4 text-gray-400 transition-transform ${
+                                    isExpanded ? 'rotate-180' : ''
+                                }`}
+                            />
+                        )} */}
+                    </div>
+                </button>
+                <Dialog>
+                    <DialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="ml-2">
+                            <Edit2 className="h-4 w-4 text-gray-600" />
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-xl">
+                        <DialogHeader>
+                            <DialogTitle>Détails du chapitre</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <h3 className="font-medium text-gray-700">
+                                    Informations générales
+                                </h3>
+                                <div className="grid grid-cols-2 gap-4 rounded-lg bg-gray-50 p-4">
+                                    <div>
+                                        <p className="text-sm text-gray-500">
+                                            Parcours
+                                        </p>
+                                        <p className="font-medium">
+                                            {
+                                                program.matiere.classe.parcours
+                                                    .name
+                                            }
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-gray-500">
+                                            Classe
+                                        </p>
+                                        <p className="font-medium">
+                                            {program.matiere.classe.name}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-gray-500">
+                                            Matière
+                                        </p>
+                                        <p className="font-medium">
+                                            {program.matiere.name}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-gray-500">
+                                            Programme
+                                        </p>
+                                        <p className="font-medium">
+                                            {program.name}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <h3 className="font-medium text-gray-700">
+                                    Chapitre
+                                </h3>
+                                <div className="rounded-lg bg-gray-50 p-4">
+                                    <div className="mb-2">
+                                        <p className="text-sm text-gray-500">
+                                            Titre
+                                        </p>
+                                        <p className="font-medium">
+                                            {chapter.title}
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <p className="text-sm text-gray-500">
+                                            Statut:
+                                        </p>
+                                        <div className="flex items-center gap-1 text-sm font-medium">
+                                            {chapter.isFinished ? (
+                                                <>
+                                                    <BadgeCheck className="h-4 w-4 text-green-500" />
+                                                    <span className="text-green-600">
+                                                        Terminé
+                                                    </span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <ChevronRight className="h-4 w-4 text-gray-400" />
+                                                    <span className="text-gray-600">
+                                                        En cours
+                                                    </span>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {chapter.activites.length > 0 && (
+                                <div className="space-y-2">
+                                    <h3 className="font-medium text-gray-700">
+                                        Activités
+                                    </h3>
+                                    <div className="space-y-2 rounded-lg bg-gray-50 p-4">
+                                        {chapter.activites.map((activity) => (
+                                            <div
+                                                key={activity.id}
+                                                className="flex items-center gap-2 rounded-md bg-white p-3"
+                                            >
+                                                <Activity className="h-4 w-4 text-blue-500" />
+                                                <span className="text-sm text-gray-700">
+                                                    {activity.note}
+                                                </span>
+                                                <span className="ml-auto text-xs text-gray-400">
+                                                    {new Date(
+                                                        activity.created_at,
+                                                    ).toLocaleDateString()}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </DialogContent>
+                </Dialog>
+            </div>
 
             {isExpanded && chapter.activites.length > 0 && (
                 <div className="border-t bg-white p-3">
@@ -168,242 +299,425 @@ const SearchFilter = ({
     </div>
 );
 
-const AddProgramModal = ({
-    parcours,
-    matiere,
-}: {
-    parcours: string[];
-    matiere: Matiere[];
-}) => {
-    const [formParcoursData, setFormParcoursData] = useState('');
-    const [selectedClasse, setSelectedClasse] = useState<unknown>(null);
-    const [formMatiereData, setFormMatiereData] = useState<unknown>(null);
-    const [programName, setProgramName] = useState('');
-    const [chapters, setChapters] = useState([{ title: '' }]);
-    const [filteredClasses, setFilteredClasses] = useState<unknown[]>([]);
-    const [filteredMatieres, setFilteredMatieres] = useState<unknown[]>([]);
+interface ChapterForm {
+    // For test only
+    id?: number;
+    title: string;
+    isFinished: boolean;
+}
 
-    useEffect(() => {
-        if (formParcoursData) {
-            const classes = matiere
-                .filter((m) => m.classe.parcours.name === formParcoursData)
-                .map((m) => m.classe);
-            const uniqueClasses = Array.from(
-                new Map(classes.map((c) => [c.id, c])).values(),
-            );
-            setFilteredClasses(uniqueClasses);
-            setSelectedClasse(null); // Reset classe sélectionnée
-        } else {
-            setFilteredClasses([]);
-        }
-        setFilteredMatieres([]);
-        setFormMatiereData(null);
-    }, [formParcoursData]);
+const ProgramEditModal = ({ program }: { program: Program }) => {
+    const [formData, setFormData] = React.useState({
+        name: program.name,
+    });
+    const [chapters, setChapters] = React.useState<ChapterForm[]>(
+        program.chapitres.map((c) => ({
+            id: c.id,
+            title: c.title,
+            isFinished: c.isFinished,
+        })),
+    );
 
-    useEffect(() => {
-        if (selectedClasse) {
-            const matieres = matiere.filter(
-                (m) => m.classe.id === selectedClasse.id,
-            );
-            setFilteredMatieres(matieres);
-        } else {
-            setFilteredMatieres([]);
-        }
-        setFormMatiereData(null);
-    }, [selectedClasse]);
-
-    const handleChapterChange = (index: number, value: string) => {
-        const updatedChapters = [...chapters];
-        updatedChapters[index].title = value;
-        setChapters(updatedChapters);
-    };
-
-    const handleAddChapter = () => {
-        setChapters([...chapters, { title: '' }]);
-    };
-
-    const handleRemoveChapter = (index: number) => {
-        setChapters(chapters.filter((_, i) => i !== index));
-    };
-
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (
-            !formParcoursData ||
-            !selectedClasse ||
-            !formMatiereData ||
-            !programName
-        ) {
-            alert('Veuillez remplir tous les champs requis.');
-            return;
-        }
-        const newProgram = {
-            parcours: formParcoursData,
-            classe: selectedClasse,
-            matiere: formMatiereData,
-            name: programName,
+        const updatedProgram = {
+            ...formData,
             chapters,
         };
+        console.log('Updated program:', updatedProgram);
+    };
 
-        console.log(newProgram);
-        const formData = new FormData();
-        formData.append('parcours', formParcoursData);
-        formData.append('classe', JSON.stringify(selectedClasse));
-        formData.append('matiere', JSON.stringify(formMatiereData));
-        formData.append('name', programName);
-        formData.append('chapters', JSON.stringify(chapters));
+    const addChapter = () => {
+        setChapters([...chapters, { title: '', isFinished: false }]);
+    };
 
-        router.post('/programmes', formData);
+    const updateChapter = (index: number, data: Partial<ChapterForm>) => {
+        const newChapters = [...chapters];
+        newChapters[index] = { ...newChapters[index], ...data };
+        setChapters(newChapters);
+    };
+
+    const removeChapter = (index: number) => {
+        setChapters(chapters.filter((_, i) => i !== index));
     };
 
     return (
         <Dialog>
             <DialogTrigger asChild>
-                <Button className="mb-4 bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600">
-                    <Plus className="mr-2 h-4 w-4" /> Ajouter un Programme
-                </Button>
+                <button className="rounded-full p-2 hover:bg-gray-100">
+                    <Edit2 className="h-4 w-4 text-gray-600" />
+                </button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="sm:max-w-xl">
                 <DialogHeader>
-                    <DialogTitle>Ajouter un nouveau programme</DialogTitle>
+                    <DialogTitle>Modifier le programme</DialogTitle>
                 </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    {/* Parcours */}
-                    <div>
-                        <label className="mb-1 block text-sm font-medium">
-                            Parcours
-                        </label>
-                        <select
-                            className="w-full rounded-md border border-gray-300 p-2"
-                            value={formParcoursData}
-                            onChange={(e) =>
-                                setFormParcoursData(e.target.value)
-                            }
-                            required
-                        >
-                            <option value="">Sélectionner un parcours</option>
-                            {parcours.map((name: string, index: number) => (
-                                <option key={index} value={name}>
-                                    {name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                    {/* Classe */}
-                    <div>
-                        <label className="mb-1 block text-sm font-medium">
-                            Classe
-                        </label>
-                        <select
-                            className="w-full rounded-md border border-gray-300 p-2"
-                            value={selectedClasse?.id || ''}
-                            onChange={(e) =>
-                                setSelectedClasse(
-                                    filteredClasses.find(
-                                        (c) =>
-                                            c.id === parseInt(e.target.value),
-                                    ) || null,
-                                )
-                            }
-                            disabled={!formParcoursData}
-                            required
-                        >
-                            <option value="">Sélectionner une classe</option>
-                            {filteredClasses.map((classe) => (
-                                <option key={classe.id} value={classe.id}>
-                                    {classe.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                    {/* Matière */}
-                    <div>
-                        <label className="mb-1 block text-sm font-medium">
-                            Matière
-                        </label>
-                        <select
-                            className="w-full rounded-md border border-gray-300 p-2"
-                            value={formMatiereData?.id || ''}
-                            onChange={(e) =>
-                                setFormMatiereData(
-                                    filteredMatieres.find(
-                                        (m) =>
-                                            m.id === parseInt(e.target.value),
-                                    ) || null,
-                                )
-                            }
-                            disabled={!selectedClasse}
-                            required
-                        >
-                            <option value="">Sélectionner une matière</option>
-                            {filteredMatieres.map((m) => (
-                                <option key={m.id} value={m.id}>
-                                    {m.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                    {/* Nom du programme */}
-                    <div>
-                        <label className="mb-1 block text-sm font-medium">
-                            Nom du programme
-                        </label>
-                        <Input
-                            value={programName}
-                            onChange={(e) => setProgramName(e.target.value)}
-                            disabled={!formMatiereData}
-                            required
-                        />
-                    </div>
-                    {/* Chapitres */}
-                    <div>
-                        <label className="mb-1 block text-sm font-medium">
-                            Chapitres
-                        </label>
-                        {chapters.map((chapter, index) => (
-                            <div
-                                key={index}
-                                className="flex items-center space-x-2"
-                            >
-                                <Input
-                                    value={chapter.title}
-                                    onChange={(e) =>
-                                        handleChapterChange(
-                                            index,
-                                            e.target.value,
-                                        )
-                                    }
-                                    required
-                                />
-                                {chapters.length > 1 && (
-                                    <Button
-                                        type="button"
-                                        className="bg-red-500 text-white"
-                                        onClick={() =>
-                                            handleRemoveChapter(index)
-                                        }
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4 rounded-lg bg-gray-50 p-4">
+                            <div>
+                                <p className="text-sm text-gray-500">
+                                    Parcours
+                                </p>
+                                <p className="font-medium">
+                                    {program.matiere.classe.parcours.name}
+                                </p>
+                            </div>
+                            <div>
+                                <p className="text-sm text-gray-500">Classe</p>
+                                <p className="font-medium">
+                                    {program.matiere.classe.name}
+                                </p>
+                            </div>
+                            <div>
+                                <p className="text-sm text-gray-500">Matière</p>
+                                <p className="font-medium">
+                                    {program.matiere.name}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="name">Nom du programme</Label>
+                            <Input
+                                id="name"
+                                value={formData.name}
+                                onChange={(e) =>
+                                    setFormData({
+                                        ...formData,
+                                        name: e.target.value,
+                                    })
+                                }
+                            />
+                        </div>
+
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-sm font-medium">
+                                    Chapitres ({chapters.length})
+                                </h3>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={addChapter}
+                                    className="flex items-center gap-1"
+                                >
+                                    <Plus className="h-4 w-4" />
+                                    Ajouter un chapitre
+                                </Button>
+                            </div>
+                            <div className="space-y-2 rounded-lg bg-gray-50 p-4">
+                                {chapters.map((chapter, index) => (
+                                    <div
+                                        key={chapter.id || index}
+                                        className="flex items-center gap-3 rounded-md bg-white p-3"
                                     >
-                                        Supprimer
-                                    </Button>
+                                        <Input
+                                            value={chapter.title}
+                                            onChange={(e) =>
+                                                updateChapter(index, {
+                                                    title: e.target.value,
+                                                })
+                                            }
+                                            placeholder="Titre du chapitre"
+                                            className="flex-1"
+                                        />
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    updateChapter(index, {
+                                                        isFinished:
+                                                            !chapter.isFinished,
+                                                    })
+                                                }
+                                                className={`rounded-full p-1 transition-colors ${
+                                                    chapter.isFinished
+                                                        ? 'bg-green-100'
+                                                        : 'bg-gray-100'
+                                                }`}
+                                            >
+                                                <BadgeCheck
+                                                    className={`h-4 w-4 ${
+                                                        chapter.isFinished
+                                                            ? 'text-green-500'
+                                                            : 'text-gray-400'
+                                                    }`}
+                                                />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    removeChapter(index)
+                                                }
+                                                className="rounded-full p-1 hover:bg-red-50"
+                                            >
+                                                <Trash2 className="h-4 w-4 text-red-500" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                                {chapters.length === 0 && (
+                                    <div className="rounded-md bg-blue-50 p-3 text-center text-sm text-blue-700">
+                                        Aucun chapitre. Cliquez sur "Ajouter un
+                                        chapitre" pour commencer.
+                                    </div>
                                 )}
                             </div>
-                        ))}
-                        <Button
-                            type="button"
-                            className="mt-2 bg-green-500 text-white"
-                            onClick={handleAddChapter}
-                        >
-                            Ajouter un chapitre
-                        </Button>
+                        </div>
                     </div>
-                    <Button type="submit" className="w-full">
-                        Ajouter
-                    </Button>
+
+                    <div className="flex justify-end gap-3">
+                        <DialogTrigger asChild>
+                            <Button type="button" variant="outline">
+                                Annuler
+                            </Button>
+                        </DialogTrigger>
+                        <Button type="submit">Enregistrer</Button>
+                    </div>
                 </form>
             </DialogContent>
         </Dialog>
     );
 };
+
+// const AddProgramModal = ({
+//     parcours,
+//     matiere,
+// }: {
+//     parcours: string[];
+//     matiere: Matiere[];
+// }) => {
+//     const [formParcoursData, setFormParcoursData] = useState('');
+//     const [selectedClasse, setSelectedClasse] = useState<unknown>(null);
+//     const [formMatiereData, setFormMatiereData] = useState<unknown>(null);
+//     const [programName, setProgramName] = useState('');
+//     const [chapters, setChapters] = useState([{ title: '' }]);
+//     const [filteredClasses, setFilteredClasses] = useState<unknown[]>([]);
+//     const [filteredMatieres, setFilteredMatieres] = useState<unknown[]>([]);
+
+//     useEffect(() => {
+//         if (formParcoursData) {
+//             const classes = matiere
+//                 .filter((m) => m.classe.parcours.name === formParcoursData)
+//                 .map((m) => m.classe);
+//             const uniqueClasses = Array.from(
+//                 new Map(classes.map((c) => [c.id, c])).values(),
+//             );
+//             setFilteredClasses(uniqueClasses);
+//             setSelectedClasse(null); // Reset classe sélectionnée
+//         } else {
+//             setFilteredClasses([]);
+//         }
+//         setFilteredMatieres([]);
+//         setFormMatiereData(null);
+//     }, [formParcoursData]);
+
+//     useEffect(() => {
+//         if (selectedClasse) {
+//             const matieres = matiere.filter(
+//                 (m) => m.classe.id === selectedClasse.id,
+//             );
+//             setFilteredMatieres(matieres);
+//         } else {
+//             setFilteredMatieres([]);
+//         }
+//         setFormMatiereData(null);
+//     }, [selectedClasse]);
+
+//     const handleChapterChange = (index: number, value: string) => {
+//         const updatedChapters = [...chapters];
+//         updatedChapters[index].title = value;
+//         setChapters(updatedChapters);
+//     };
+
+//     const handleAddChapter = () => {
+//         setChapters([...chapters, { title: '' }]);
+//     };
+
+//     const handleRemoveChapter = (index: number) => {
+//         setChapters(chapters.filter((_, i) => i !== index));
+//     };
+
+//     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+//         e.preventDefault();
+//         if (
+//             !formParcoursData ||
+//             !selectedClasse ||
+//             !formMatiereData ||
+//             !programName
+//         ) {
+//             alert('Veuillez remplir tous les champs requis.');
+//             return;
+//         }
+//         const newProgram = {
+//             parcours: formParcoursData,
+//             classe: selectedClasse,
+//             matiere: formMatiereData,
+//             name: programName,
+//             chapters,
+//         };
+
+//         console.log(newProgram);
+//         const formData = new FormData();
+//         formData.append('parcours', formParcoursData);
+//         formData.append('classe', JSON.stringify(selectedClasse));
+//         formData.append('matiere', JSON.stringify(formMatiereData));
+//         formData.append('name', programName);
+//         formData.append('chapters', JSON.stringify(chapters));
+
+//         router.post('/programmes', formData);
+//     };
+
+//     return (
+//         <Dialog>
+//             <DialogTrigger asChild>
+//                 <Button className="mb-4 bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600">
+//                     <Plus className="mr-2 h-4 w-4" /> Ajouter un Programme
+//                 </Button>
+//             </DialogTrigger>
+//             <DialogContent>
+//                 <DialogHeader>
+//                     <DialogTitle>Ajouter un nouveau programme</DialogTitle>
+//                 </DialogHeader>
+//                 <form onSubmit={handleSubmit} className="space-y-4">
+//                     {/* Parcours */}
+//                     <div>
+//                         <label className="mb-1 block text-sm font-medium">
+//                             Parcours
+//                         </label>
+//                         <select
+//                             className="w-full rounded-md border border-gray-300 p-2"
+//                             value={formParcoursData}
+//                             onChange={(e) =>
+//                                 setFormParcoursData(e.target.value)
+//                             }
+//                             required
+//                         >
+//                             <option value="">Sélectionner un parcours</option>
+//                             {parcours.map((name: string, index: number) => (
+//                                 <option key={index} value={name}>
+//                                     {name}
+//                                 </option>
+//                             ))}
+//                         </select>
+//                     </div>
+//                     {/* Classe */}
+//                     <div>
+//                         <label className="mb-1 block text-sm font-medium">
+//                             Classe
+//                         </label>
+//                         <select
+//                             className="w-full rounded-md border border-gray-300 p-2"
+//                             value={selectedClasse?.id || ''}
+//                             onChange={(e) =>
+//                                 setSelectedClasse(
+//                                     filteredClasses.find(
+//                                         (c) =>
+//                                             c.id === parseInt(e.target.value),
+//                                     ) || null,
+//                                 )
+//                             }
+//                             disabled={!formParcoursData}
+//                             required
+//                         >
+//                             <option value="">Sélectionner une classe</option>
+//                             {filteredClasses.map((classe) => (
+//                                 <option key={classe.id} value={classe.id}>
+//                                     {classe.name}
+//                                 </option>
+//                             ))}
+//                         </select>
+//                     </div>
+//                     {/* Matière */}
+//                     <div>
+//                         <label className="mb-1 block text-sm font-medium">
+//                             Matière
+//                         </label>
+//                         <select
+//                             className="w-full rounded-md border border-gray-300 p-2"
+//                             value={formMatiereData?.id || ''}
+//                             onChange={(e) =>
+//                                 setFormMatiereData(
+//                                     filteredMatieres.find(
+//                                         (m) =>
+//                                             m.id === parseInt(e.target.value),
+//                                     ) || null,
+//                                 )
+//                             }
+//                             disabled={!selectedClasse}
+//                             required
+//                         >
+//                             <option value="">Sélectionner une matière</option>
+//                             {filteredMatieres.map((m) => (
+//                                 <option key={m.id} value={m.id}>
+//                                     {m.name}
+//                                 </option>
+//                             ))}
+//                         </select>
+//                     </div>
+//                     {/* Nom du programme */}
+//                     <div>
+//                         <label className="mb-1 block text-sm font-medium">
+//                             Nom du programme
+//                         </label>
+//                         <Input
+//                             value={programName}
+//                             onChange={(e) => setProgramName(e.target.value)}
+//                             disabled={!formMatiereData}
+//                             required
+//                         />
+//                     </div>
+//                     {/* Chapitres */}
+//                     <div>
+//                         <label className="mb-1 block text-sm font-medium">
+//                             Chapitres
+//                         </label>
+//                         {chapters.map((chapter, index) => (
+//                             <div
+//                                 key={index}
+//                                 className="flex items-center space-x-2"
+//                             >
+//                                 <Input
+//                                     value={chapter.title}
+//                                     onChange={(e) =>
+//                                         handleChapterChange(
+//                                             index,
+//                                             e.target.value,
+//                                         )
+//                                     }
+//                                     required
+//                                 />
+//                                 {chapters.length > 1 && (
+//                                     <Button
+//                                         type="button"
+//                                         className="bg-red-500 text-white"
+//                                         onClick={() =>
+//                                             handleRemoveChapter(index)
+//                                         }
+//                                     >
+//                                         Supprimer
+//                                     </Button>
+//                                 )}
+//                             </div>
+//                         ))}
+//                         <Button
+//                             type="button"
+//                             className="mt-2 bg-green-500 text-white"
+//                             onClick={handleAddChapter}
+//                         >
+//                             Ajouter un chapitre
+//                         </Button>
+//                     </div>
+//                     <Button type="submit" className="w-full">
+//                         Ajouter
+//                     </Button>
+//                 </form>
+//             </DialogContent>
+//         </Dialog>
+//     );
+// };
 
 const ProgramDashboard = ({
     programs,
@@ -433,13 +747,13 @@ const ProgramDashboard = ({
         return Array.from(classesSet);
     }, [programs]);
 
-    const matieres = React.useMemo(() => {
-        const matieresSet = new Set<Matiere>();
-        programs.forEach((program) => {
-            matieresSet.add(program.matiere);
-        });
-        return Array.from(matieresSet);
-    }, [programs]);
+    // const matieres = React.useMemo(() => {
+    //     const matieresSet = new Set<Matiere>();
+    //     programs.forEach((program) => {
+    //         matieresSet.add(program.matiere);
+    //     });
+    //     return Array.from(matieresSet);
+    // }, [programs]);
 
     // Filter programs
     const filteredPrograms = React.useMemo(() => {
@@ -486,9 +800,6 @@ const ProgramDashboard = ({
         );
     };
 
-    const handleAddProgram = (newProgram: unknown, e) => {
-        console.log('New program:', newProgram);
-    };
     return (
         <Authenticated>
             <Head title={title} />
@@ -503,7 +814,7 @@ const ProgramDashboard = ({
                             parcours
                         </p>
                     </div>
-                    <AddProgramModal matiere={matieres} parcours={parcours} />
+                    {/* <AddProgramModal matiere={matieres} parcours={parcours} /> */}
                 </header>
                 <SearchFilter
                     onSearch={setSearchTerm}
@@ -556,7 +867,6 @@ const ProgramDashboard = ({
                                                             className="min-w-[300px] max-w-[300px] flex-shrink-0 transition-shadow hover:shadow-lg"
                                                         >
                                                             <div className="p-6">
-                                                                {/* Programme */}
                                                                 <div className="mb-4 flex items-start justify-between">
                                                                     <div>
                                                                         <h4 className="font-semibold text-gray-900">
@@ -573,9 +883,11 @@ const ProgramDashboard = ({
                                                                         </p>
                                                                     </div>
                                                                     <div className="flex gap-2">
-                                                                        <button className="rounded-full p-2 hover:bg-gray-100">
-                                                                            <Edit2 className="h-4 w-4 text-gray-600" />
-                                                                        </button>
+                                                                        <ProgramEditModal
+                                                                            program={
+                                                                                program
+                                                                            }
+                                                                        />
                                                                         <button className="rounded-full p-2 hover:bg-red-50">
                                                                             <Trash2 className="h-4 w-4 text-red-500" />
                                                                         </button>
@@ -617,6 +929,9 @@ const ProgramDashboard = ({
                                                                                 }
                                                                                 chapter={
                                                                                     chapter
+                                                                                }
+                                                                                program={
+                                                                                    program
                                                                                 }
                                                                             />
                                                                         ),
