@@ -38,7 +38,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('classes', ClasseController::class);
         Route::resource('matieres', MatiereController::class);
         Route::resource('programmes', ProgrammeController::class);
-
     });
 
     // Routes pour les délégués

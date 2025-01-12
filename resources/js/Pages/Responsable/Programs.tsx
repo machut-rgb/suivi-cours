@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import Authenticated from '@/Layouts/AuthenticatedLayout';
-import { Head } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import {
     Activity,
     BadgeCheck,
@@ -23,7 +23,7 @@ import {
     Search,
     Trash2,
 } from 'lucide-react';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 interface Parcours {
     id: number;
@@ -169,39 +169,98 @@ const SearchFilter = ({
 );
 
 const AddProgramModal = ({
-    onAdd,
+    parcours,
+    matiere,
 }: {
-    onAdd: (data: {
-        name: string;
-        matiere: { id: number; name: string };
-        parcours: {
-            id: number;
-            name: string;
-            classe: { id: number; name: string };
-        };
-    }) => void;
+    parcours: string[];
+    matiere: Matiere[];
 }) => {
-    const [formProgramData, setFormProgramData] = React.useState({
-        name: '',
-        matiere_id: '',
-    });
+    const [formParcoursData, setFormParcoursData] = useState('');
+    const [selectedClasse, setSelectedClasse] = useState<unknown>(null);
+    const [formMatiereData, setFormMatiereData] = useState<unknown>(null);
+    const [programName, setProgramName] = useState('');
+    const [chapters, setChapters] = useState([{ title: '' }]);
+    const [filteredClasses, setFilteredClasses] = useState<unknown[]>([]);
+    const [filteredMatieres, setFilteredMatieres] = useState<unknown[]>([]);
 
-    const [formChapterData, setFormChapterData] = React.useState([{}]); // title, programme_id
+    useEffect(() => {
+        if (formParcoursData) {
+            const classes = matiere
+                .filter((m) => m.classe.parcours.name === formParcoursData)
+                .map((m) => m.classe);
+            const uniqueClasses = Array.from(
+                new Map(classes.map((c) => [c.id, c])).values(),
+            );
+            setFilteredClasses(uniqueClasses);
+            setSelectedClasse(null); // Reset classe sélectionnée
+        } else {
+            setFilteredClasses([]);
+        }
+        setFilteredMatieres([]);
+        setFormMatiereData(null);
+    }, [formParcoursData]);
+
+    useEffect(() => {
+        if (selectedClasse) {
+            const matieres = matiere.filter(
+                (m) => m.classe.id === selectedClasse.id,
+            );
+            setFilteredMatieres(matieres);
+        } else {
+            setFilteredMatieres([]);
+        }
+        setFormMatiereData(null);
+    }, [selectedClasse]);
+
+    const handleChapterChange = (index: number, value: string) => {
+        const updatedChapters = [...chapters];
+        updatedChapters[index].title = value;
+        setChapters(updatedChapters);
+    };
+
+    const handleAddChapter = () => {
+        setChapters([...chapters, { title: '' }]);
+    };
+
+    const handleRemoveChapter = (index: number) => {
+        setChapters(chapters.filter((_, i) => i !== index));
+    };
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        // setFormProgramData({ name: '', matiere_id: '' });
+        if (
+            !formParcoursData ||
+            !selectedClasse ||
+            !formMatiereData ||
+            !programName
+        ) {
+            alert('Veuillez remplir tous les champs requis.');
+            return;
+        }
+        const newProgram = {
+            parcours: formParcoursData,
+            classe: selectedClasse,
+            matiere: formMatiereData,
+            name: programName,
+            chapters,
+        };
 
-        console.log(formProgramData);
-        console.log(formChapterData);
+        console.log(newProgram);
+        const formData = new FormData();
+        formData.append('parcours', formParcoursData);
+        formData.append('classe', JSON.stringify(selectedClasse));
+        formData.append('matiere', JSON.stringify(formMatiereData));
+        formData.append('name', programName);
+        formData.append('chapters', JSON.stringify(chapters));
+
+        router.post('/programmes', formData);
     };
 
     return (
         <Dialog>
             <DialogTrigger asChild>
                 <Button className="mb-4 bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Ajouter un Programme
+                    <Plus className="mr-2 h-4 w-4" /> Ajouter un Programme
                 </Button>
             </DialogTrigger>
             <DialogContent>
@@ -209,81 +268,133 @@ const AddProgramModal = ({
                     <DialogTitle>Ajouter un nouveau programme</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
+                    {/* Parcours */}
                     <div>
                         <label className="mb-1 block text-sm font-medium">
                             Parcours
                         </label>
                         <select
                             className="w-full rounded-md border border-gray-300 p-2"
-                            // value={formData.parcours_id}
-                            // onChange={(e) =>
-                            //     setFormData((prev) => ({
-                            //         ...prev,
-                            //         parcours_id: e.target.value,
-                            //     }))
-                            // }
+                            value={formParcoursData}
+                            onChange={(e) =>
+                                setFormParcoursData(e.target.value)
+                            }
                             required
                         >
-                            <option value="">Sélectionner une classe</option>
-                            {[1, 2, 3, 4, 5, 6].map((id) => (
-                                <option key={id} value={id}>
-                                    {id}
+                            <option value="">Sélectionner un parcours</option>
+                            {parcours.map((name: string, index: number) => (
+                                <option key={index} value={name}>
+                                    {name}
                                 </option>
                             ))}
                         </select>
                     </div>
-                    <div>
-                        <label className="mb-1 block text-sm font-medium">
-                            Nom du programme
-                        </label>
-                        <Input
-                            // value={formData.name}
-                            // onChange={(e) =>
-                            //     setFormData((prev) => ({
-                            //         ...prev,
-                            //         name: e.target.value,
-                            //     }))
-                            // }
-                            required
-                        />
-                    </div>
-                    <div>
-                        <label className="mb-1 block text-sm font-medium">
-                            Matière
-                        </label>
-                        <Input
-                            // value={formData.matiere}
-                            // onChange={(e) =>
-                            //     setFormData((prev) => ({
-                            //         ...prev,
-                            //         matiere: e.target.value,
-                            //     }))
-                            // }
-                            required
-                        />
-                    </div>
+                    {/* Classe */}
                     <div>
                         <label className="mb-1 block text-sm font-medium">
                             Classe
                         </label>
                         <select
                             className="w-full rounded-md border border-gray-300 p-2"
-                            // value={formData.classe_id}
-                            // onChange={(e) =>
-                            //     setFormData((prev) => ({
-                            //         ...prev,
-                            //         classe_id: e.target.value,
-                            //     }))
-                            // }
+                            value={selectedClasse?.id || ''}
+                            onChange={(e) =>
+                                setSelectedClasse(
+                                    filteredClasses.find(
+                                        (c) =>
+                                            c.id === parseInt(e.target.value),
+                                    ) || null,
+                                )
+                            }
+                            disabled={!formParcoursData}
                             required
                         >
                             <option value="">Sélectionner une classe</option>
-                            {[1, 2, 3, 4, 5, 6].map((id) => (
-                                <option key={id} value={id}>
-                                    Classe {id}
+                            {filteredClasses.map((classe) => (
+                                <option key={classe.id} value={classe.id}>
+                                    {classe.name}
                                 </option>
                             ))}
                         </select>
+                    </div>
+                    {/* Matière */}
+                    <div>
+                        <label className="mb-1 block text-sm font-medium">
+                            Matière
+                        </label>
+                        <select
+                            className="w-full rounded-md border border-gray-300 p-2"
+                            value={formMatiereData?.id || ''}
+                            onChange={(e) =>
+                                setFormMatiereData(
+                                    filteredMatieres.find(
+                                        (m) =>
+                                            m.id === parseInt(e.target.value),
+                                    ) || null,
+                                )
+                            }
+                            disabled={!selectedClasse}
+                            required
+                        >
+                            <option value="">Sélectionner une matière</option>
+                            {filteredMatieres.map((m) => (
+                                <option key={m.id} value={m.id}>
+                                    {m.name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    {/* Nom du programme */}
+                    <div>
+                        <label className="mb-1 block text-sm font-medium">
+                            Nom du programme
+                        </label>
+                        <Input
+                            value={programName}
+                            onChange={(e) => setProgramName(e.target.value)}
+                            disabled={!formMatiereData}
+                            required
+                        />
+                    </div>
+                    {/* Chapitres */}
+                    <div>
+                        <label className="mb-1 block text-sm font-medium">
+                            Chapitres
+                        </label>
+                        {chapters.map((chapter, index) => (
+                            <div
+                                key={index}
+                                className="flex items-center space-x-2"
+                            >
+                                <Input
+                                    value={chapter.title}
+                                    onChange={(e) =>
+                                        handleChapterChange(
+                                            index,
+                                            e.target.value,
+                                        )
+                                    }
+                                    required
+                                />
+                                {chapters.length > 1 && (
+                                    <Button
+                                        type="button"
+                                        className="bg-red-500 text-white"
+                                        onClick={() =>
+                                            handleRemoveChapter(index)
+                                        }
+                                    >
+                                        Supprimer
+                                    </Button>
+                                )}
+                            </div>
+                        ))}
+                        <Button
+                            type="button"
+                            className="mt-2 bg-green-500 text-white"
+                            onClick={handleAddChapter}
+                        >
+                            Ajouter un chapitre
+                        </Button>
                     </div>
                     <Button type="submit" className="w-full">
                         Ajouter
@@ -305,11 +416,6 @@ const ProgramDashboard = ({
     const [selectedParcours, setSelectedParcours] = React.useState('');
     const [selectedClasse, setSelectedClasse] = React.useState('');
 
-    // console.log(programs);
-    // console.log(programs[1].matiere.classe[0].parcours);
-
-    // programs.forEach((d) => console.log(d.matiere.classe.parcours));
-
     // Extract unique parcours and classes
     const parcours = React.useMemo(() => {
         const parcoursSet = new Set<string>();
@@ -318,7 +424,6 @@ const ProgramDashboard = ({
         });
         return Array.from(parcoursSet);
     }, [programs]);
-    // console.log(parcours);
 
     const classes = React.useMemo(() => {
         const classesSet = new Set<string>();
@@ -326,6 +431,14 @@ const ProgramDashboard = ({
             classesSet.add(program.matiere.classe.name);
         });
         return Array.from(classesSet);
+    }, [programs]);
+
+    const matieres = React.useMemo(() => {
+        const matieresSet = new Set<Matiere>();
+        programs.forEach((program) => {
+            matieresSet.add(program.matiere);
+        });
+        return Array.from(matieresSet);
     }, [programs]);
 
     // Filter programs
@@ -373,8 +486,7 @@ const ProgramDashboard = ({
         );
     };
 
-    const handleAddProgram = (newProgram: unknown) => {
-        // Handle program addition logic here
+    const handleAddProgram = (newProgram: unknown, e) => {
         console.log('New program:', newProgram);
     };
     return (
@@ -391,7 +503,7 @@ const ProgramDashboard = ({
                             parcours
                         </p>
                     </div>
-                    <AddProgramModal onAdd={handleAddProgram} />
+                    <AddProgramModal matiere={matieres} parcours={parcours} />
                 </header>
                 <SearchFilter
                     onSearch={setSearchTerm}
