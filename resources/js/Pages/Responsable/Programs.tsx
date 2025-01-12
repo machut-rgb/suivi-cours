@@ -15,7 +15,6 @@ import {
     Activity,
     BadgeCheck,
     BookOpen,
-    ChevronDown,
     ChevronRight,
     Edit2,
     GraduationCap,
@@ -89,25 +88,16 @@ const ChapterCard = ({
                             {chapter.title}
                         </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                        {chapter.isFinished ? (
-                            <BadgeCheck className="h-5 w-5 text-green-500" />
-                        ) : (
-                            <BadgeCheck className="h-5 w-5 text-gray-500" />
-                        )}
-                        {/* {chapter.activites.length > 0 && (
-                            <ChevronDown
-                                className={`h-4 w-4 text-gray-400 transition-transform ${
-                                    isExpanded ? 'rotate-180' : ''
-                                }`}
-                            />
-                        )} */}
-                    </div>
                 </button>
                 <Dialog>
                     <DialogTrigger asChild>
                         <Button variant="ghost" size="icon" className="ml-2">
-                            <Edit2 className="h-4 w-4 text-gray-600" />
+                            {/* <Edit2 className="h-4 w-4 text-gray-600" /> */}
+                            {chapter.isFinished ? (
+                                <BadgeCheck className="h-5 w-5 text-green-500" />
+                            ) : (
+                                <BadgeCheck className="h-5 w-5 text-gray-500" />
+                            )}
                         </Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-xl">
@@ -888,9 +878,6 @@ const ProgramDashboard = ({
                                                                                 program
                                                                             }
                                                                         />
-                                                                        <button className="rounded-full p-2 hover:bg-red-50">
-                                                                            <Trash2 className="h-4 w-4 text-red-500" />
-                                                                        </button>
                                                                     </div>
                                                                 </div>
 
