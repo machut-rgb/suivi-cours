@@ -342,7 +342,7 @@ const ProgramEditModal = ({ program }: { program: Program }) => {
         setChapters(newChapters);
     };
 
-    const [chap2remove, setChap2remove] = React.useState([]);
+    const [chap2remove, setChap2remove] = React.useState<number[]>([]);
     const removeChapter = (index: number, id: number) => {
         const tempChap2rem = chap2remove.concat(id);
         setChap2remove(tempChap2rem);
@@ -462,7 +462,7 @@ const ProgramEditModal = ({ program }: { program: Program }) => {
                                                 onClick={() =>
                                                     removeChapter(
                                                         index,
-                                                        chapter?.id,
+                                                        chapter?.id ?? 0,
                                                     )
                                                 }
                                                 className="rounded-full p-1 hover:bg-red-50"
