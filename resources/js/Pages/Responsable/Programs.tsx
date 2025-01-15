@@ -10,7 +10,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Authenticated from '@/Layouts/AuthenticatedLayout';
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import {
     Activity,
     BadgeCheck,
@@ -23,6 +23,7 @@ import {
     Search,
     Trash2,
 } from 'lucide-react';
+import { PageProps } from '@/types';
 import React from 'react';
 
 interface Parcours {
@@ -48,7 +49,7 @@ interface Activite {
 interface Chapter {
     id: number;
     title: string;
-    isFinished: boolean;
+    isFinished: number;
     programme_id: number;
     activites: Activite[];
 }
@@ -293,12 +294,13 @@ interface ChapterForm {
     // For test only
     id?: number;
     title: string;
-    isFinished: boolean;
+    isFinished: number;
 }
 
 const ProgramEditModal = ({ program }: { program: Program }) => {
     const [formData, setFormData] = React.useState({
         name: program.name,
+        programme_id: program.id,
     });
     const [chapters, setChapters] = React.useState<ChapterForm[]>(
         program.chapitres.map((c) => ({
@@ -315,10 +317,23 @@ const ProgramEditModal = ({ program }: { program: Program }) => {
             chapters,
         };
         console.log('Updated program:', updatedProgram);
+
+        const formData2Send = new FormData();
+        formData2Send.append(
+            'programme_id',
+            JSON.stringify(formData.programme_id),
+        );
+        formData2Send.append('name', formData.name);
+        formData2Send.append('chap2remove', JSON.stringify(chap2remove));
+        formData2Send.append('chapters', JSON.stringify(chapters));
+
+        console.log('To remove : ', chap2remove);
+
+        router.post('/programmes', formData2Send);
     };
 
     const addChapter = () => {
-        setChapters([...chapters, { title: '', isFinished: false }]);
+        setChapters([...chapters, { title: '', isFinished: 0 }]);
     };
 
     const updateChapter = (index: number, data: Partial<ChapterForm>) => {
@@ -327,7 +342,10 @@ const ProgramEditModal = ({ program }: { program: Program }) => {
         setChapters(newChapters);
     };
 
-    const removeChapter = (index: number) => {
+    const [chap2remove, setChap2remove] = React.useState([]);
+    const removeChapter = (index: number, id: number) => {
+        const tempChap2rem = chap2remove.concat(id);
+        setChap2remove(tempChap2rem);
         setChapters(chapters.filter((_, i) => i !== index));
     };
 
@@ -397,7 +415,7 @@ const ProgramEditModal = ({ program }: { program: Program }) => {
                                     Ajouter un chapitre
                                 </Button>
                             </div>
-                            <div className="space-y-2 rounded-lg bg-gray-50 p-4">
+                            <div className="max-h-[15rem] space-y-2 overflow-y-scroll rounded-lg bg-gray-50 p-4">
                                 {chapters.map((chapter, index) => (
                                     <div
                                         key={chapter.id || index}
@@ -419,7 +437,10 @@ const ProgramEditModal = ({ program }: { program: Program }) => {
                                                 onClick={() =>
                                                     updateChapter(index, {
                                                         isFinished:
-                                                            !chapter.isFinished,
+                                                            chapter.isFinished ==
+                                                            0
+                                                                ? 1
+                                                                : 0,
                                                     })
                                                 }
                                                 className={`rounded-full p-1 transition-colors ${
@@ -439,7 +460,10 @@ const ProgramEditModal = ({ program }: { program: Program }) => {
                                             <button
                                                 type="button"
                                                 onClick={() =>
-                                                    removeChapter(index)
+                                                    removeChapter(
+                                                        index,
+                                                        chapter?.id,
+                                                    )
                                                 }
                                                 className="rounded-full p-1 hover:bg-red-50"
                                             >
@@ -471,243 +495,6 @@ const ProgramEditModal = ({ program }: { program: Program }) => {
         </Dialog>
     );
 };
-
-// const AddProgramModal = ({
-//     parcours,
-//     matiere,
-// }: {
-//     parcours: string[];
-//     matiere: Matiere[];
-// }) => {
-//     const [formParcoursData, setFormParcoursData] = useState('');
-//     const [selectedClasse, setSelectedClasse] = useState<unknown>(null);
-//     const [formMatiereData, setFormMatiereData] = useState<unknown>(null);
-//     const [programName, setProgramName] = useState('');
-//     const [chapters, setChapters] = useState([{ title: '' }]);
-//     const [filteredClasses, setFilteredClasses] = useState<unknown[]>([]);
-//     const [filteredMatieres, setFilteredMatieres] = useState<unknown[]>([]);
-
-//     useEffect(() => {
-//         if (formParcoursData) {
-//             const classes = matiere
-//                 .filter((m) => m.classe.parcours.name === formParcoursData)
-//                 .map((m) => m.classe);
-//             const uniqueClasses = Array.from(
-//                 new Map(classes.map((c) => [c.id, c])).values(),
-//             );
-//             setFilteredClasses(uniqueClasses);
-//             setSelectedClasse(null); // Reset classe sélectionnée
-//         } else {
-//             setFilteredClasses([]);
-//         }
-//         setFilteredMatieres([]);
-//         setFormMatiereData(null);
-//     }, [formParcoursData]);
-
-//     useEffect(() => {
-//         if (selectedClasse) {
-//             const matieres = matiere.filter(
-//                 (m) => m.classe.id === selectedClasse.id,
-//             );
-//             setFilteredMatieres(matieres);
-//         } else {
-//             setFilteredMatieres([]);
-//         }
-//         setFormMatiereData(null);
-//     }, [selectedClasse]);
-
-//     const handleChapterChange = (index: number, value: string) => {
-//         const updatedChapters = [...chapters];
-//         updatedChapters[index].title = value;
-//         setChapters(updatedChapters);
-//     };
-
-//     const handleAddChapter = () => {
-//         setChapters([...chapters, { title: '' }]);
-//     };
-
-//     const handleRemoveChapter = (index: number) => {
-//         setChapters(chapters.filter((_, i) => i !== index));
-//     };
-
-//     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-//         e.preventDefault();
-//         if (
-//             !formParcoursData ||
-//             !selectedClasse ||
-//             !formMatiereData ||
-//             !programName
-//         ) {
-//             alert('Veuillez remplir tous les champs requis.');
-//             return;
-//         }
-//         const newProgram = {
-//             parcours: formParcoursData,
-//             classe: selectedClasse,
-//             matiere: formMatiereData,
-//             name: programName,
-//             chapters,
-//         };
-
-//         console.log(newProgram);
-//         const formData = new FormData();
-//         formData.append('parcours', formParcoursData);
-//         formData.append('classe', JSON.stringify(selectedClasse));
-//         formData.append('matiere', JSON.stringify(formMatiereData));
-//         formData.append('name', programName);
-//         formData.append('chapters', JSON.stringify(chapters));
-
-//         router.post('/programmes', formData);
-//     };
-
-//     return (
-//         <Dialog>
-//             <DialogTrigger asChild>
-//                 <Button className="mb-4 bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600">
-//                     <Plus className="mr-2 h-4 w-4" /> Ajouter un Programme
-//                 </Button>
-//             </DialogTrigger>
-//             <DialogContent>
-//                 <DialogHeader>
-//                     <DialogTitle>Ajouter un nouveau programme</DialogTitle>
-//                 </DialogHeader>
-//                 <form onSubmit={handleSubmit} className="space-y-4">
-//                     {/* Parcours */}
-//                     <div>
-//                         <label className="mb-1 block text-sm font-medium">
-//                             Parcours
-//                         </label>
-//                         <select
-//                             className="w-full rounded-md border border-gray-300 p-2"
-//                             value={formParcoursData}
-//                             onChange={(e) =>
-//                                 setFormParcoursData(e.target.value)
-//                             }
-//                             required
-//                         >
-//                             <option value="">Sélectionner un parcours</option>
-//                             {parcours.map((name: string, index: number) => (
-//                                 <option key={index} value={name}>
-//                                     {name}
-//                                 </option>
-//                             ))}
-//                         </select>
-//                     </div>
-//                     {/* Classe */}
-//                     <div>
-//                         <label className="mb-1 block text-sm font-medium">
-//                             Classe
-//                         </label>
-//                         <select
-//                             className="w-full rounded-md border border-gray-300 p-2"
-//                             value={selectedClasse?.id || ''}
-//                             onChange={(e) =>
-//                                 setSelectedClasse(
-//                                     filteredClasses.find(
-//                                         (c) =>
-//                                             c.id === parseInt(e.target.value),
-//                                     ) || null,
-//                                 )
-//                             }
-//                             disabled={!formParcoursData}
-//                             required
-//                         >
-//                             <option value="">Sélectionner une classe</option>
-//                             {filteredClasses.map((classe) => (
-//                                 <option key={classe.id} value={classe.id}>
-//                                     {classe.name}
-//                                 </option>
-//                             ))}
-//                         </select>
-//                     </div>
-//                     {/* Matière */}
-//                     <div>
-//                         <label className="mb-1 block text-sm font-medium">
-//                             Matière
-//                         </label>
-//                         <select
-//                             className="w-full rounded-md border border-gray-300 p-2"
-//                             value={formMatiereData?.id || ''}
-//                             onChange={(e) =>
-//                                 setFormMatiereData(
-//                                     filteredMatieres.find(
-//                                         (m) =>
-//                                             m.id === parseInt(e.target.value),
-//                                     ) || null,
-//                                 )
-//                             }
-//                             disabled={!selectedClasse}
-//                             required
-//                         >
-//                             <option value="">Sélectionner une matière</option>
-//                             {filteredMatieres.map((m) => (
-//                                 <option key={m.id} value={m.id}>
-//                                     {m.name}
-//                                 </option>
-//                             ))}
-//                         </select>
-//                     </div>
-//                     {/* Nom du programme */}
-//                     <div>
-//                         <label className="mb-1 block text-sm font-medium">
-//                             Nom du programme
-//                         </label>
-//                         <Input
-//                             value={programName}
-//                             onChange={(e) => setProgramName(e.target.value)}
-//                             disabled={!formMatiereData}
-//                             required
-//                         />
-//                     </div>
-//                     {/* Chapitres */}
-//                     <div>
-//                         <label className="mb-1 block text-sm font-medium">
-//                             Chapitres
-//                         </label>
-//                         {chapters.map((chapter, index) => (
-//                             <div
-//                                 key={index}
-//                                 className="flex items-center space-x-2"
-//                             >
-//                                 <Input
-//                                     value={chapter.title}
-//                                     onChange={(e) =>
-//                                         handleChapterChange(
-//                                             index,
-//                                             e.target.value,
-//                                         )
-//                                     }
-//                                     required
-//                                 />
-//                                 {chapters.length > 1 && (
-//                                     <Button
-//                                         type="button"
-//                                         className="bg-red-500 text-white"
-//                                         onClick={() =>
-//                                             handleRemoveChapter(index)
-//                                         }
-//                                     >
-//                                         Supprimer
-//                                     </Button>
-//                                 )}
-//                             </div>
-//                         ))}
-//                         <Button
-//                             type="button"
-//                             className="mt-2 bg-green-500 text-white"
-//                             onClick={handleAddChapter}
-//                         >
-//                             Ajouter un chapitre
-//                         </Button>
-//                     </div>
-//                     <Button type="submit" className="w-full">
-//                         Ajouter
-//                     </Button>
-//                 </form>
-//             </DialogContent>
-//         </Dialog>
-//     );
-// };
 
 const ProgramDashboard = ({
     programs,

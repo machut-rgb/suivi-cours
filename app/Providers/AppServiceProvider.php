@@ -29,5 +29,9 @@ class AppServiceProvider extends ServiceProvider
             Log::info('Gate check for responsable', ['user' => $user->id, 'role' => $user->role]);
             return $user->role === 'responsable';
         });
+        Gate::define('responsable', function (User $user) {
+            Log::info('Gate check for responsable', ['user' => $user->id, 'role' => $user->role]);
+            return $user->role === 'responsable';
+        });
     }
 }

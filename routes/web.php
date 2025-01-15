@@ -41,9 +41,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     // Routes pour les délégués
-    // Route::middleware('can:delegue')->group(function () {
-    //     Route::resource('activites', ActiviteController::class);
-    // });
+    Route::middleware('can:delegue')->group(function () {
+        Route::resource('activites', ActiviteController::class);
+    });
 });
 
 require __DIR__.'/auth.php';
