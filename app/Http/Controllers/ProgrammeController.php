@@ -97,10 +97,14 @@ class ProgrammeController extends Controller
         //     'programme' => Programme::find($programme->id),
         // ]);
 
+        $programmes = Programme::with('matiere.classe.parcours', 'chapitres.activites')->get();
+
         return Inertia::render('Responsable/Programs', [
             'status' => session('status'),
             'success' => true,
             'message' => 'Programme enregistré avec succès',
+            'title' => 'Programmes',
+            'programs' => $programmes,
         ]);
     }
 

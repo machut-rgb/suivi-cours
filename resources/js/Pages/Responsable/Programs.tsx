@@ -503,6 +503,7 @@ const ProgramDashboard = ({
     programs: Program[];
     title: string;
 }) => {
+    console.log(programs);
     const [searchTerm, setSearchTerm] = React.useState('');
     const [selectedParcours, setSelectedParcours] = React.useState('');
     const [selectedClasse, setSelectedClasse] = React.useState('');

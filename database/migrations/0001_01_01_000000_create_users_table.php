@@ -18,6 +18,8 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('role')->default('delegue');
             $table->string('password');
+            $table->unsignedBigInteger('classe_id')->nullable();
+            $table->foreignId('classe_id')->constrained('classes')->onDelete('set null');
             $table->rememberToken();
             $table->timestamps();
         });

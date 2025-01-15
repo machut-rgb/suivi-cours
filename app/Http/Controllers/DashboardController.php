@@ -46,7 +46,7 @@ class DashboardController extends Controller
         } elseif (Auth::user()->role === 'delegue') {
             return Inertia::render('Delegue/Dashboard', [
                 'title' => 'Tableau de Bord - Délégué',
-                'tasks' => Activite::where('user_id', Auth::id())->get(), // Exemple de données
+                'activities' => Activite::where('user_id', Auth::id())->get(), // Exemple de données
             ]);
         }
 

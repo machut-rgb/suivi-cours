@@ -20,4 +20,9 @@ class Classe extends Model
     {
         return $this->hasMany(Matiere::class);
     }
+
+    public function users()
+    {
+        return $this->hasMany(User::class);
+    }
 }
