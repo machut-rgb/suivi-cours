@@ -27,9 +27,14 @@ class DashboardController extends Controller
         // Redirection selon le rôle de l'utilisateur
         if (Auth::user()->role === 'responsable') {
             // dd(Programme::with('matiere.classe')->get()->toArray());
+            $programs = Programme::with([
+                'matiere.classe.parcours',       // Fetch classes and parcours
+                'chapitres.activites',           // Fetch chapters and their activities
+            ])->get();
+            
             return Inertia::render('Responsable/Dashboard', [
                 'title' => 'Tableau de Bord - Responsable',
-                'programs' => Programme::with('matiere.classe')->get(), // Exemple de données
+                'programs' => $programs,
             ]);
         } elseif (Auth::user()->role === 'delegue') {
             return redirect()->route('dashboard.delegue');

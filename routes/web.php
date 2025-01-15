@@ -3,6 +3,7 @@
 use App\Http\Controllers\ClasseController;
 use App\Http\Controllers\MatiereController;
 use App\Http\Controllers\ProgrammeController;
+use App\Http\Controllers\ProgrammeExportController;
 use App\Http\Controllers\ActiviteController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -38,6 +39,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('classes', ClasseController::class);
         Route::resource('matieres', MatiereController::class);
         Route::resource('programmes', ProgrammeController::class);
+        Route::get('/programmes/{programme}/export', [ProgrammeExportController::class, 'exportPdf'])
+    ->name('programmes.export');
     });
 
     // Routes pour les délégués
