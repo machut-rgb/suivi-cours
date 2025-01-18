@@ -584,8 +584,8 @@ const ProgramDashboard = ({
 
     return (
         <Authenticated>
-            <Head title={title} />
             <div className="min-h-screen">
+            <Head title={title} />
                 <header className="mb-4 flex items-center justify-between">
                     <div>
                         <h1 className="mb-2 text-3xl font-bold text-gray-900">

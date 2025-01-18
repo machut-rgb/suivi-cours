@@ -35,7 +35,7 @@ class User extends Authenticatable
         'remember_token',
     ];
 
-    public function classes()
+    public function classe()
     {
         return $this->belongsTo(Classe::class);
     }

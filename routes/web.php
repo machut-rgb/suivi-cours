@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DelegueController;
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -39,8 +40,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('classes', ClasseController::class);
         Route::resource('matieres', MatiereController::class);
         Route::resource('programmes', ProgrammeController::class);
-        Route::get('/programmes/{programme}/export', [ProgrammeExportController::class, 'exportPdf'])
-    ->name('programmes.export');
+        Route::get('/programmes/{programme}/export', [ProgrammeExportController::class, 'exportPdf'])->name('programmes.export');
+        Route::get('/users', [DelegueController::class, 'index'])->name('delegues.index');
     });
 
     // Routes pour les délégués
