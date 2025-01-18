@@ -5,13 +5,15 @@ use App\Models\Classe;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Inertia\Inertia;
+
 class ClasseController extends Controller
 {
     use AuthorizesRequests;
 
     public function __construct()
     {
-        $this->authorizeResource(Classe::class, 'classe');
+        // $this->authorizeResource(Classe::class, 'classe');
     }
 
     /**
@@ -19,8 +21,11 @@ class ClasseController extends Controller
      */
     public function index()
     {
-        $classes = Classe::with('matieres.programmes')->get();
-        return response()->json($classes);
+        $classes = Classe::with('parcours')->get();
+        return Inertia::render('Responsable/Parcours', [
+            'data' => $classes,
+            'title' => 'Parcours',
+        ]);
     }
 
     /**

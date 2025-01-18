@@ -23,8 +23,7 @@ import {
     Search,
     Trash2,
 } from 'lucide-react';
-import { PageProps } from '@/types';
-import React from 'react';
+import React, { useState } from 'react';
 
 interface Parcours {
     id: number;
@@ -298,6 +297,7 @@ interface ChapterForm {
 }
 
 const ProgramEditModal = ({ program }: { program: Program }) => {
+    const [open, setOpen] = useState(false);
     const [formData, setFormData] = React.useState({
         name: program.name,
         programme_id: program.id,
@@ -328,8 +328,12 @@ const ProgramEditModal = ({ program }: { program: Program }) => {
         formData2Send.append('chapters', JSON.stringify(chapters));
 
         console.log('To remove : ', chap2remove);
-
-        router.post('/programmes', formData2Send);
+        router.post('/programmes', formData2Send, {
+            onSuccess: () => {
+                setOpen(false);
+                setChap2remove([]);
+            },
+        });
     };
 
     const addChapter = () => {
@@ -350,7 +354,7 @@ const ProgramEditModal = ({ program }: { program: Program }) => {
     };
 
     return (
-        <Dialog>
+        <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
                 <button className="rounded-full p-2 hover:bg-gray-100">
                     <Edit2 className="h-4 w-4 text-gray-600" />
@@ -582,17 +586,16 @@ const ProgramDashboard = ({
         <Authenticated>
             <Head title={title} />
             <div className="min-h-screen">
-                <header className="mb-8 flex items-center justify-between">
+                <header className="mb-4 flex items-center justify-between">
                     <div>
                         <h1 className="mb-2 text-3xl font-bold text-gray-900">
                             {title}
                         </h1>
-                        <p className="text-gray-600">
+                        {/* <p className="text-gray-600">
                             Suivez vos progrès éducatifs à travers tous les
                             parcours
-                        </p>
+                        </p> */}
                     </div>
-                    {/* <AddProgramModal matiere={matieres} parcours={parcours} /> */}
                 </header>
                 <SearchFilter
                     onSearch={setSearchTerm}

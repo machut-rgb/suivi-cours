@@ -85,9 +85,11 @@ class ProgrammeController extends Controller
             }
         }
         $chap2rem = json_decode($request->input('chap2remove'));
-        if ($chap2rem) {
+        if (isset($chap2rem) ) {
             foreach ($chap2rem as $c2r) {
-                Chapitre::find($c2r)->delete();
+                if($c2r)
+                    if(Chapitre::find($c2r))    
+                        Chapitre::find($c2r)->delete();
             }
         }
 
