@@ -13,6 +13,7 @@ return new class extends Migration {
         Schema::create('activites', function (Blueprint $table) {
             $table->id();
             $table->text('note');
+            $table->date('date');
             $table->foreignId('chapitre_id')->constrained('chapitres')->onDelete('cascade');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->timestamps();

@@ -33,7 +33,7 @@ class ClasseController extends Controller
      */
     public function show(Classe $classe)
     {
-        $classe->load('matieres.programmes');
+        $classe->load('matieres.programme');
         return response()->json($classe);
     }
 

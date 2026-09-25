@@ -23,6 +23,7 @@ class User extends Authenticatable
         'role',
         'password',
         'classe_id',
+        'approved_at',
     ];
 
     /**
@@ -40,6 +41,29 @@ class User extends Authenticatable
         return $this->belongsTo(Classe::class);
     }
 
+    public function activites()
+    {
+        return $this->hasMany(Activite::class);
+    }
+
+    public function isResponsable(): bool
+    {
+        return $this->role === 'responsable';
+    }
+
+    public function isDelegue(): bool
+    {
+        return $this->role === 'delegue';
+    }
+
+    /**
+     * Responsables are trusted by default; délégués need a responsable's approval.
+     */
+    public function isApproved(): bool
+    {
+        return $this->isResponsable() || $this->approved_at !== null;
+    }
+
     /**
      * Get the attributes that should be cast.
      *
@@ -49,6 +73,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'approved_at' => 'datetime',
             'password' => 'hashed',
         ];
     }

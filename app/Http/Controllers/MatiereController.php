@@ -18,7 +18,7 @@ class MatiereController extends Controller
      */
     public function index()
     {
-        $matieres = Matiere::with('classe', 'programmes')->get();
+        $matieres = Matiere::with('classe', 'programme')->get();
         return response()->json($matieres);
     }
 
@@ -27,7 +27,7 @@ class MatiereController extends Controller
      */
     public function show(Matiere $matiere)
     {
-        $matiere->load('classe', 'programmes');
+        $matiere->load('classe', 'programme');
         return response()->json($matiere);
     }
 

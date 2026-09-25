@@ -9,6 +9,8 @@ class Classe extends Model
 {
     use HasFactory;
 
+    protected $table = 'classes';
+
     protected $fillable = ['name', 'parcours_id'];
 
     public function parcours()

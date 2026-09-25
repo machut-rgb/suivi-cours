@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Classe;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -29,7 +30,30 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
+            'role' => 'delegue',
+            'classe_id' => Classe::factory(),
+            'approved_at' => now(),
         ];
+    }
+
+    /**
+     * A responsable (coordinator) account.
+     */
+    public function responsable(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => 'responsable',
+        ]);
+    }
+
+    /**
+     * A délégué who registered but has not been approved yet.
+     */
+    public function pending(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'approved_at' => null,
+        ]);
     }
 
     /**

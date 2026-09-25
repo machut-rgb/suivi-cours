@@ -9,7 +9,14 @@ class Activite extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['note', 'chapitre_id'];
+    protected $fillable = ['note', 'date', 'chapitre_id', 'user_id'];
+
+    protected function casts(): array
+    {
+        return [
+            'date' => 'date:Y-m-d',
+        ];
+    }
 
     public function chapitre()
     {

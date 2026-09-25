@@ -1,152 +1,126 @@
 <?php
+
 namespace Database\Seeders;
 
+use App\Models\Activite;
+use App\Models\Chapitre;
+use App\Models\Classe;
+use App\Models\Matiere;
+use App\Models\Parcours;
+use App\Models\Programme;
+use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
-    public function run()
+    /**
+     * Demo data: 2 parcours, 5 classes, one programme per subject, 4 chapters each.
+     * Run with `php artisan migrate:fresh --seed`.
+     */
+    public function run(): void
     {
-        // Désactiver les contraintes de clé étrangère pour éviter les conflits
-        if (DB::getDriverName() !== 'sqlite') {
-            DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        }
-
-        // Vider les tables
-        DB::table('activites')->truncate();
-        DB::table('chapitres')->truncate();
-        DB::table('programmes')->truncate();
-        DB::table('matieres')->truncate();
-        DB::table('classes')->truncate();
-        DB::table('parcours')->truncate();
-        DB::table('users')->truncate();
-
-        // Réactiver les contraintes de clé étrangère
-        if (DB::getDriverName() !== 'sqlite') {
-            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
-        }
-
-        // Création des parcours
-        $parcoursIds = [
-            'scientifique' => DB::table('parcours')->insertGetId([
-                'name' => 'Parcours Scientifique',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]),
-            'litteraire' => DB::table('parcours')->insertGetId([
-                'name' => 'Parcours Littéraire',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]),
+        $structure = [
+            'Parcours Scientifique' => [
+                'classes' => ['Première S1', 'Première S2', 'Terminale S'],
+                'matieres' => ['Mathématiques', 'Physique-Chimie', 'SVT'],
+            ],
+            'Parcours Littéraire' => [
+                'classes' => ['Première L', 'Terminale L'],
+                'matieres' => ['Français', 'Philosophie', 'Histoire-Géographie', 'Anglais'],
+            ],
         ];
 
-        // Création des classes pour chaque parcours
-        $classes = [
-            'scientifique' => ['Première S1', 'Première S2', 'Terminale S'],
-            'litteraire' => ['Première L', 'Terminale L'],
+        $chapterTitles = [
+            'Chapitre 1 - Introduction',
+            'Chapitre 2 - Concepts fondamentaux',
+            'Chapitre 3 - Applications pratiques',
+            'Chapitre 4 - Approfondissements',
         ];
 
-        $classIds = []; // Stocker les IDs des classes
-        foreach ($classes as $parcours => $classNames) {
-            foreach ($classNames as $className) {
-                $classId = DB::table('classes')->insertGetId([
-                    'name' => $className,
-                    'parcours_id' => $parcoursIds[$parcours],
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-                $classIds[] = $classId; // Ajouter l'ID de la classe dans le tableau
-            }
-        }
+        $activityTypes = ['Cours magistral', 'Exercices pratiques', 'Travaux dirigés', 'Évaluation formative'];
 
-        // Création des utilisateurs
-        DB::table('users')->insert([
-            [
-                'name' => 'Admin Responsable',
-                'email' => 'responsable@example.com',
-                'password' => Hash::make('password'),
-                'role' => 'responsable',
-                'classe_id' => $classIds[0], // Première classe scientifique
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'name' => 'Jean Dupont',
-                'email' => 'delegue@example.com',
-                'password' => Hash::make('password'),
-                'role' => 'delegue',
-                'classe_id' => $classIds[1], // Deuxième classe scientifique
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'name' => 'Marie Martin',
-                'email' => 'delegue2@example.com',
-                'password' => Hash::make('password'),
-                'role' => 'delegue',
-                'classe_id' => $classIds[2], // Troisième classe scientifique
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
+        $password = Hash::make('password');
+
+        User::create([
+            'name' => 'Admin Responsable',
+            'email' => 'responsable@example.com',
+            'password' => $password,
+            'role' => 'responsable',
+            'email_verified_at' => now(),
         ]);
 
-        // Continuer à insérer les matières, programmes, chapitres et activités
-        foreach ($classIds as $index => $classId) {
-            $parcoursType = $index < 3 ? 'scientifique' : 'litteraire'; // Basé sur les indices
-            $matieres = $parcoursType === 'scientifique' 
-                ? ['Mathématiques', 'Physique-Chimie', 'SVT'] 
-                : ['Français', 'Philosophie', 'Histoire-Géographie', 'Anglais'];
+        // Timeline starts four months ago so the monthly charts have something to show.
+        $start = Carbon::now()->subMonths(4)->startOfMonth();
 
-            foreach ($matieres as $matiere) {
-                $matiereId = DB::table('matieres')->insertGetId([
-                    'name' => $matiere,
-                    'classe_id' => $classId,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
+        $delegueSeeds = [
+            'Première S1' => ['Jean Dupont', 'delegue@example.com', true],
+            'Première S2' => ['Marie Martin', 'delegue2@example.com', true],
+            'Terminale L' => ['Paul Bernard', 'delegue3@example.com', false],
+        ];
 
-                $programmeId = DB::table('programmes')->insertGetId([
-                    'name' => "Programme de $matiere",
-                    'matiere_id' => $matiereId,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
+        $classIndex = 0;
+        foreach ($structure as $parcoursName => $config) {
+            $parcours = Parcours::create(['name' => $parcoursName]);
 
-                $chapitres = [
-                    'Chapitre 1 - Introduction',
-                    'Chapitre 2 - Concepts fondamentaux',
-                    'Chapitre 3 - Applications pratiques',
-                    'Chapitre 4 - Approfondissements',
-                ];
+            foreach ($config['classes'] as $className) {
+                $classe = Classe::create(['name' => $className, 'parcours_id' => $parcours->id]);
 
-                foreach ($chapitres as $index => $chapitre) {
-                    $chapitreId = DB::table('chapitres')->insertGetId([
-                        'programme_id' => $programmeId,
-                        'title' => $chapitre,
-                        'isFinished' => $index < 2,
-                        'created_at' => now(),
-                        'updated_at' => now(),
+                $delegue = null;
+                if (isset($delegueSeeds[$className])) {
+                    [$name, $email, $approved] = $delegueSeeds[$className];
+                    $delegue = User::create([
+                        'name' => $name,
+                        'email' => $email,
+                        'password' => $password,
+                        'role' => 'delegue',
+                        'classe_id' => $classe->id,
+                        'email_verified_at' => now(),
+                        'approved_at' => $approved ? now() : null,
+                    ]);
+                }
+
+                foreach ($config['matieres'] as $matiereIndex => $matiereName) {
+                    $matiere = Matiere::create(['name' => $matiereName, 'classe_id' => $classe->id]);
+                    $programme = Programme::create([
+                        'name' => "Programme de $matiereName",
+                        'matiere_id' => $matiere->id,
                     ]);
 
-                    $activites = [
-                        'Cours magistral',
-                        'Exercices pratiques',
-                        'Évaluation formative',
-                        'Travaux dirigés',
-                    ];
+                    // Vary progress per class/subject: 0 to 4 finished chapters.
+                    $finishedCount = ($classIndex + $matiereIndex) % 5;
 
-                    foreach ($activites as $activite) {
-                        DB::table('activites')->insert([
-                            'chapitre_id' => $chapitreId,
-                            'user_id' => rand(1, 3),
-                            'note' => "$activite - $chapitre",
-                            'created_at' => now(),
-                            'updated_at' => now(),
+                    foreach ($chapterTitles as $chapterIndex => $title) {
+                        $chapterStart = $start->copy()->addWeeks($chapterIndex * 4 + $matiereIndex);
+                        $finished = $chapterIndex < $finishedCount;
+
+                        $chapitre = new Chapitre([
+                            'title' => $title,
+                            'programme_id' => $programme->id,
+                            'isFinished' => $finished,
                         ]);
+                        $chapitre->finished_at = $finished ? $chapterStart->copy()->addWeeks(3) : null;
+                        $chapitre->save();
+
+                        // Only delegues log activities, and only for chapters already started.
+                        if ($delegue && $delegue->approved_at && $chapterIndex <= $finishedCount) {
+                            foreach ($activityTypes as $i => $type) {
+                                $date = $chapterStart->copy()->addDays($i * 5);
+                                if ($date->isFuture()) {
+                                    continue;
+                                }
+                                Activite::create([
+                                    'chapitre_id' => $chapitre->id,
+                                    'user_id' => $delegue->id,
+                                    'note' => "$type - $title",
+                                    'date' => $date->toDateString(),
+                                ]);
+                            }
+                        }
                     }
                 }
+                $classIndex++;
             }
         }
     }
