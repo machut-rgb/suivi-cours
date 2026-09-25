@@ -10,12 +10,15 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Authenticated from '@/Layouts/AuthenticatedLayout';
+import { Chapitre, Programme } from '@/types';
 import { Head, router } from '@inertiajs/react';
 import {
     Activity,
     BadgeCheck,
     BookOpen,
+    ChevronDown,
     ChevronRight,
+    Download,
     Edit2,
     GraduationCap,
     Plus,
@@ -23,341 +26,148 @@ import {
     Search,
     Trash2,
 } from 'lucide-react';
-import React, { useState } from 'react';
+import { FormEvent, useMemo, useState } from 'react';
 
-interface Parcours {
-    id: number;
-    name: string;
-}
+const formatDate = (date: string) => new Date(date).toLocaleDateString('fr-FR');
 
-interface Classe {
-    id: number;
-    name: string;
-    parcours: Parcours;
-}
-
-interface Activite {
-    id: number;
-    note: string;
-    chapitre_id: number;
-    user_id: number;
-    created_at: string;
-    updated_at: string;
-}
-
-interface Chapter {
-    id: number;
-    title: string;
-    isFinished: number;
-    programme_id: number;
-    activites: Activite[];
-}
-
-interface Matiere {
-    id: number;
-    name: string;
-    classe: Classe;
-}
-
-interface Program {
-    id: number;
-    name: string;
-    matiere: Matiere;
-    chapitres: Chapter[];
-}
-
-const ChapterCard = ({
-    chapter,
-    program,
-}: {
-    chapter: Chapter;
-    program: Program;
-}) => {
-    const [isExpanded, setIsExpanded] = React.useState(false);
+const ChapterCard = ({ chapter }: { chapter: Chapitre }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+    const activites = chapter.activites ?? [];
 
     return (
-        <div className="overflow-hidden rounded-lg border">
-            <div className="flex w-full items-center justify-between bg-gray-50 p-3">
-                <button
-                    onClick={() => setIsExpanded(!isExpanded)}
-                    className="flex flex-1 items-center justify-between"
-                >
-                    <div className="flex items-center gap-3">
-                        <BookOpen className="h-4 w-4 text-gray-600" />
-                        <span className="text-sm font-medium text-gray-800">
-                            {chapter.title}
-                        </span>
-                    </div>
-                </button>
-                <Dialog>
-                    <DialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="ml-2">
-                            {/* <Edit2 className="h-4 w-4 text-gray-600" /> */}
-                            {chapter.isFinished ? (
-                                <BadgeCheck className="h-5 w-5 text-green-500" />
-                            ) : (
-                                <BadgeCheck className="h-5 w-5 text-gray-500" />
-                            )}
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-xl">
-                        <DialogHeader>
-                            <DialogTitle>Détails du chapitre</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                            <div className="space-y-2">
-                                <h3 className="font-medium text-gray-700">
-                                    Informations générales
-                                </h3>
-                                <div className="grid grid-cols-2 gap-4 rounded-lg bg-gray-50 p-4">
-                                    <div>
-                                        <p className="text-sm text-gray-500">
-                                            Parcours
-                                        </p>
-                                        <p className="font-medium">
-                                            {
-                                                program.matiere.classe.parcours
-                                                    .name
-                                            }
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm text-gray-500">
-                                            Classe
-                                        </p>
-                                        <p className="font-medium">
-                                            {program.matiere.classe.name}
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm text-gray-500">
-                                            Matière
-                                        </p>
-                                        <p className="font-medium">
-                                            {program.matiere.name}
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm text-gray-500">
-                                            Programme
-                                        </p>
-                                        <p className="font-medium">
-                                            {program.name}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
+        <div className="overflow-hidden rounded-lg border dark:border-gray-700">
+            <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="flex w-full items-center justify-between gap-3 bg-gray-50 p-3 text-left dark:bg-gray-900"
+            >
+                <span className="flex items-center gap-3">
+                    {isExpanded ? (
+                        <ChevronDown className="h-4 w-4 text-gray-500" />
+                    ) : (
+                        <ChevronRight className="h-4 w-4 text-gray-500" />
+                    )}
+                    <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                        {chapter.title}
+                    </span>
+                </span>
+                <span className="flex items-center gap-2 text-xs text-gray-500">
+                    {activites.length}
+                    <Activity className="h-3.5 w-3.5" />
+                    <BadgeCheck
+                        className={`h-5 w-5 ${chapter.isFinished ? 'text-green-500' : 'text-gray-300'}`}
+                        aria-label={chapter.isFinished ? 'Terminé' : 'En cours'}
+                    />
+                </span>
+            </button>
 
-                            <div className="space-y-2">
-                                <h3 className="font-medium text-gray-700">
-                                    Chapitre
-                                </h3>
-                                <div className="rounded-lg bg-gray-50 p-4">
-                                    <div className="mb-2">
-                                        <p className="text-sm text-gray-500">
-                                            Titre
-                                        </p>
-                                        <p className="font-medium">
-                                            {chapter.title}
-                                        </p>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <p className="text-sm text-gray-500">
-                                            Statut:
-                                        </p>
-                                        <div className="flex items-center gap-1 text-sm font-medium">
-                                            {chapter.isFinished ? (
-                                                <>
-                                                    <BadgeCheck className="h-4 w-4 text-green-500" />
-                                                    <span className="text-green-600">
-                                                        Terminé
-                                                    </span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <ChevronRight className="h-4 w-4 text-gray-400" />
-                                                    <span className="text-gray-600">
-                                                        En cours
-                                                    </span>
-                                                </>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {chapter.activites.length > 0 && (
-                                <div className="space-y-2">
-                                    <h3 className="font-medium text-gray-700">
-                                        Activités
-                                    </h3>
-                                    <div className="space-y-2 rounded-lg bg-gray-50 p-4">
-                                        {chapter.activites.map((activity) => (
-                                            <div
-                                                key={activity.id}
-                                                className="flex items-center gap-2 rounded-md bg-white p-3"
-                                            >
-                                                <Activity className="h-4 w-4 text-blue-500" />
-                                                <span className="text-sm text-gray-700">
-                                                    {activity.note}
-                                                </span>
-                                                <span className="ml-auto text-xs text-gray-400">
-                                                    {new Date(
-                                                        activity.created_at,
-                                                    ).toLocaleDateString()}
-                                                </span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </DialogContent>
-                </Dialog>
-            </div>
-
-            {isExpanded && chapter.activites.length > 0 && (
-                <div className="border-t bg-white p-3">
-                    <div className="space-y-2">
-                        {chapter.activites.map((activity) => (
-                            <div
-                                key={activity.id}
-                                className="flex items-center gap-2 rounded-md bg-gray-50 p-2"
-                            >
-                                <Activity className="h-4 w-4 text-blue-500" />
-                                <span className="text-sm text-gray-700">
+            {isExpanded && (
+                <div className="space-y-2 border-t bg-white p-3 dark:border-gray-700 dark:bg-gray-800">
+                    {chapter.isFinished && chapter.finished_at && (
+                        <p className="text-xs text-green-700 dark:text-green-400">
+                            Terminé le {formatDate(chapter.finished_at)}
+                        </p>
+                    )}
+                    {activites.length === 0 && (
+                        <p className="text-sm text-gray-500">
+                            Aucune activité rapportée.
+                        </p>
+                    )}
+                    {activites.map((activity) => (
+                        <div
+                            key={activity.id}
+                            className="flex items-start gap-2 rounded-md bg-gray-50 p-2 dark:bg-gray-900"
+                        >
+                            <Activity className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" />
+                            <div className="min-w-0 flex-1">
+                                <p className="text-sm text-gray-700 dark:text-gray-300">
                                     {activity.note}
-                                </span>
+                                </p>
+                                <p className="mt-0.5 text-xs text-gray-400">
+                                    {formatDate(activity.date)}
+                                    {activity.user &&
+                                        ` · ${activity.user.name}`}
+                                </p>
                             </div>
-                        ))}
-                    </div>
+                        </div>
+                    ))}
                 </div>
             )}
         </div>
     );
 };
 
-const SearchFilter = ({
-    onSearch,
-    onParcoursFilter,
-    onClasseFilter,
-    parcours,
-    classes,
-}: {
-    onSearch: (value: string) => void;
-    onParcoursFilter: (value: string) => void;
-    onClasseFilter: (value: string) => void;
-    parcours: string[];
-    classes: string[];
-}) => (
-    <div className="mb-6 flex flex-wrap gap-4 rounded-lg bg-white p-4 shadow-sm">
-        <div className="min-w-[200px] flex-1">
-            <div className="relative">
-                <input
-                    type="text"
-                    placeholder="Rechercher un programme..."
-                    onChange={(e) => onSearch(e.target.value)}
-                    className="w-full rounded-md border border-gray-300 py-2 pl-10 pr-4 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                />
-                <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-            </div>
-        </div>
-
-        <select
-            onChange={(e) => onParcoursFilter(e.target.value)}
-            className="rounded-md border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-        >
-            <option value="">Tous les parcours</option>
-            {parcours.map((p) => (
-                <option key={p} value={p}>
-                    {p}
-                </option>
-            ))}
-        </select>
-
-        <select
-            onChange={(e) => onClasseFilter(e.target.value)}
-            className="rounded-md border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-        >
-            <option value="">Toutes les classes</option>
-            {classes.map((c) => (
-                <option key={c} value={c}>
-                    {c}
-                </option>
-            ))}
-        </select>
-    </div>
-);
-
 interface ChapterForm {
-    // For test only
     id?: number;
     title: string;
-    isFinished: number;
+    isFinished: boolean;
 }
 
-const ProgramEditModal = ({ program }: { program: Program }) => {
+const ProgramEditModal = ({ program }: { program: Programme }) => {
     const [open, setOpen] = useState(false);
-    const [formData, setFormData] = React.useState({
-        name: program.name,
-        programme_id: program.id,
-    });
-    const [chapters, setChapters] = React.useState<ChapterForm[]>(
-        program.chapitres.map((c) => ({
-            id: c.id,
-            title: c.title,
-            isFinished: c.isFinished,
-        })),
-    );
+    const [processing, setProcessing] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
+    const [name, setName] = useState(program.name);
+    const [chapters, setChapters] = useState<ChapterForm[]>([]);
+    const [removedIds, setRemovedIds] = useState<number[]>([]);
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        const updatedProgram = {
-            ...formData,
-            chapters,
-        };
-        console.log('Updated program:', updatedProgram);
-
-        const formData2Send = new FormData();
-        formData2Send.append(
-            'programme_id',
-            JSON.stringify(formData.programme_id),
-        );
-        formData2Send.append('name', formData.name);
-        formData2Send.append('chap2remove', JSON.stringify(chap2remove));
-        formData2Send.append('chapters', JSON.stringify(chapters));
-
-        console.log('To remove : ', chap2remove);
-        router.post('/programmes', formData2Send, {
-            onSuccess: () => {
-                setOpen(false);
-                setChap2remove([]);
-            },
-        });
+    // Reset the form from the latest server data every time the modal opens.
+    const onOpenChange = (value: boolean) => {
+        if (value) {
+            setName(program.name);
+            setChapters(
+                program.chapitres.map((c) => ({
+                    id: c.id,
+                    title: c.title,
+                    isFinished: c.isFinished,
+                })),
+            );
+            setRemovedIds([]);
+            setErrors({});
+        }
+        setOpen(value);
     };
 
-    const addChapter = () => {
-        setChapters([...chapters, { title: '', isFinished: 0 }]);
+    const handleSubmit = (e: FormEvent) => {
+        e.preventDefault();
+        router.put(
+            route('programmes.update', program.id),
+            {
+                name,
+                chapters: chapters.map((c) => ({ ...c })),
+                removed_chapter_ids: removedIds,
+            },
+            {
+                preserveScroll: true,
+                onStart: () => setProcessing(true),
+                onFinish: () => setProcessing(false),
+                onSuccess: () => setOpen(false),
+                onError: (errs) => setErrors(errs),
+            },
+        );
     };
 
     const updateChapter = (index: number, data: Partial<ChapterForm>) => {
-        const newChapters = [...chapters];
-        newChapters[index] = { ...newChapters[index], ...data };
-        setChapters(newChapters);
+        setChapters((prev) =>
+            prev.map((c, i) => (i === index ? { ...c, ...data } : c)),
+        );
     };
 
-    const [chap2remove, setChap2remove] = React.useState<number[]>([]);
-    const removeChapter = (index: number, id: number) => {
-        const tempChap2rem = chap2remove.concat(id);
-        setChap2remove(tempChap2rem);
-        setChapters(chapters.filter((_, i) => i !== index));
+    const removeChapter = (index: number) => {
+        const id = chapters[index].id;
+        if (id) setRemovedIds((prev) => [...prev, id]);
+        setChapters((prev) => prev.filter((_, i) => i !== index));
     };
+
+    const errorList = Object.values(errors);
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogTrigger asChild>
-                <button className="rounded-full p-2 hover:bg-gray-100">
-                    <Edit2 className="h-4 w-4 text-gray-600" />
+                <button
+                    className="rounded-full p-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    aria-label={`Modifier ${program.name}`}
+                >
+                    <Edit2 className="h-4 w-4 text-gray-600 dark:text-gray-300" />
                 </button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-xl">
@@ -365,134 +175,142 @@ const ProgramEditModal = ({ program }: { program: Program }) => {
                     <DialogTitle>Modifier le programme</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4 rounded-lg bg-gray-50 p-4">
-                            <div>
-                                <p className="text-sm text-gray-500">
-                                    Parcours
-                                </p>
-                                <p className="font-medium">
-                                    {program.matiere.classe.parcours.name}
-                                </p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-500">Classe</p>
-                                <p className="font-medium">
-                                    {program.matiere.classe.name}
-                                </p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-500">Matière</p>
-                                <p className="font-medium">
-                                    {program.matiere.name}
-                                </p>
-                            </div>
+                    <div className="grid grid-cols-3 gap-4 rounded-lg bg-gray-50 p-4 text-sm dark:bg-gray-900">
+                        <div>
+                            <p className="text-gray-500">Parcours</p>
+                            <p className="font-medium">
+                                {program.matiere.classe?.parcours?.name}
+                            </p>
                         </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="name">Nom du programme</Label>
-                            <Input
-                                id="name"
-                                value={formData.name}
-                                onChange={(e) =>
-                                    setFormData({
-                                        ...formData,
-                                        name: e.target.value,
-                                    })
-                                }
-                            />
+                        <div>
+                            <p className="text-gray-500">Classe</p>
+                            <p className="font-medium">
+                                {program.matiere.classe?.name}
+                            </p>
                         </div>
-
-                        <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                                <h3 className="text-sm font-medium">
-                                    Chapitres ({chapters.length})
-                                </h3>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={addChapter}
-                                    className="flex items-center gap-1"
-                                >
-                                    <Plus className="h-4 w-4" />
-                                    Ajouter un chapitre
-                                </Button>
-                            </div>
-                            <div className="max-h-[15rem] space-y-2 overflow-y-scroll rounded-lg bg-gray-50 p-4">
-                                {chapters.map((chapter, index) => (
-                                    <div
-                                        key={chapter.id || index}
-                                        className="flex items-center gap-3 rounded-md bg-white p-3"
-                                    >
-                                        <Input
-                                            value={chapter.title}
-                                            onChange={(e) =>
-                                                updateChapter(index, {
-                                                    title: e.target.value,
-                                                })
-                                            }
-                                            placeholder="Titre du chapitre"
-                                            className="flex-1"
-                                        />
-                                        <div className="flex items-center gap-2">
-                                            <button
-                                                type="button"
-                                                onClick={() =>
-                                                    updateChapter(index, {
-                                                        isFinished:
-                                                            chapter.isFinished ==
-                                                            0
-                                                                ? 1
-                                                                : 0,
-                                                    })
-                                                }
-                                                className={`rounded-full p-1 transition-colors ${
-                                                    chapter.isFinished
-                                                        ? 'bg-green-100'
-                                                        : 'bg-gray-100'
-                                                }`}
-                                            >
-                                                <BadgeCheck
-                                                    className={`h-4 w-4 ${
-                                                        chapter.isFinished
-                                                            ? 'text-green-500'
-                                                            : 'text-gray-400'
-                                                    }`}
-                                                />
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() =>
-                                                    removeChapter(
-                                                        index,
-                                                        chapter?.id ?? 0,
-                                                    )
-                                                }
-                                                className="rounded-full p-1 hover:bg-red-50"
-                                            >
-                                                <Trash2 className="h-4 w-4 text-red-500" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                                {chapters.length === 0 && (
-                                    <div className="rounded-md bg-blue-50 p-3 text-center text-sm text-blue-700">
-                                        Aucun chapitre. Cliquez sur "Ajouter un
-                                        chapitre" pour commencer.
-                                    </div>
-                                )}
-                            </div>
+                        <div>
+                            <p className="text-gray-500">Matière</p>
+                            <p className="font-medium">
+                                {program.matiere.name}
+                            </p>
                         </div>
                     </div>
 
-                    <div className="flex justify-end gap-3">
-                        <DialogTrigger asChild>
-                            <Button type="button" variant="outline">
-                                Annuler
+                    <div className="space-y-2">
+                        <Label htmlFor={`name-${program.id}`}>
+                            Nom du programme
+                        </Label>
+                        <Input
+                            id={`name-${program.id}`}
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            required
+                        />
+                    </div>
+
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-sm font-medium">
+                                Chapitres ({chapters.length})
+                            </h3>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                    setChapters((prev) => [
+                                        ...prev,
+                                        { title: '', isFinished: false },
+                                    ])
+                                }
+                                className="flex items-center gap-1"
+                            >
+                                <Plus className="h-4 w-4" />
+                                Ajouter un chapitre
                             </Button>
-                        </DialogTrigger>
-                        <Button type="submit">Enregistrer</Button>
+                        </div>
+                        <div className="max-h-[15rem] space-y-2 overflow-y-auto rounded-lg bg-gray-50 p-4 dark:bg-gray-900">
+                            {chapters.map((chapter, index) => (
+                                <div
+                                    key={chapter.id ?? `new-${index}`}
+                                    className="flex items-center gap-3 rounded-md bg-white p-3 dark:bg-gray-800"
+                                >
+                                    <Input
+                                        value={chapter.title}
+                                        onChange={(e) =>
+                                            updateChapter(index, {
+                                                title: e.target.value,
+                                            })
+                                        }
+                                        placeholder="Titre du chapitre"
+                                        className="flex-1"
+                                        required
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            updateChapter(index, {
+                                                isFinished: !chapter.isFinished,
+                                            })
+                                        }
+                                        title={
+                                            chapter.isFinished
+                                                ? 'Terminé — cliquer pour rouvrir'
+                                                : 'En cours — cliquer pour terminer'
+                                        }
+                                        aria-pressed={chapter.isFinished}
+                                        className={`rounded-full p-1 transition-colors ${
+                                            chapter.isFinished
+                                                ? 'bg-green-100'
+                                                : 'bg-gray-100'
+                                        }`}
+                                    >
+                                        <BadgeCheck
+                                            className={`h-4 w-4 ${
+                                                chapter.isFinished
+                                                    ? 'text-green-500'
+                                                    : 'text-gray-400'
+                                            }`}
+                                        />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => removeChapter(index)}
+                                        aria-label="Supprimer le chapitre"
+                                        className="rounded-full p-1 hover:bg-red-50"
+                                    >
+                                        <Trash2 className="h-4 w-4 text-red-500" />
+                                    </button>
+                                </div>
+                            ))}
+                            {chapters.length === 0 && (
+                                <div className="rounded-md bg-blue-50 p-3 text-center text-sm text-blue-700">
+                                    Aucun chapitre. Cliquez sur « Ajouter un
+                                    chapitre » pour commencer.
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {errorList.length > 0 && (
+                        <ul className="rounded-md bg-red-50 p-3 text-sm text-red-700">
+                            {Array.from(new Set(errorList)).map((err) => (
+                                <li key={err}>{err}</li>
+                            ))}
+                        </ul>
+                    )}
+
+                    <div className="flex justify-end gap-3">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setOpen(false)}
+                        >
+                            Annuler
+                        </Button>
+                        <Button type="submit" disabled={processing}>
+                            Enregistrer
+                        </Button>
                     </div>
                 </form>
             </DialogContent>
@@ -504,242 +322,228 @@ const ProgramDashboard = ({
     programs,
     title,
 }: {
-    programs: Program[];
+    programs: Programme[];
     title: string;
 }) => {
-    console.log(programs);
-    const [searchTerm, setSearchTerm] = React.useState('');
-    const [selectedParcours, setSelectedParcours] = React.useState('');
-    const [selectedClasse, setSelectedClasse] = React.useState('');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedParcours, setSelectedParcours] = useState('');
+    const [selectedClasse, setSelectedClasse] = useState('');
 
-    // Extract unique parcours and classes
-    const parcours = React.useMemo(() => {
-        const parcoursSet = new Set<string>();
-        programs.forEach((program) => {
-            parcoursSet.add(program.matiere.classe.parcours.name);
-        });
-        return Array.from(parcoursSet);
-    }, [programs]);
+    const parcoursOf = (p: Programme) => p.matiere.classe?.parcours?.name ?? '';
+    const classeOf = (p: Programme) => p.matiere.classe?.name ?? '';
 
-    const classes = React.useMemo(() => {
-        const classesSet = new Set<string>();
-        programs.forEach((program) => {
-            classesSet.add(program.matiere.classe.name);
-        });
-        return Array.from(classesSet);
-    }, [programs]);
+    const parcours = useMemo(
+        () => Array.from(new Set(programs.map(parcoursOf))).sort(),
+        [programs],
+    );
 
-    // const matieres = React.useMemo(() => {
-    //     const matieresSet = new Set<Matiere>();
-    //     programs.forEach((program) => {
-    //         matieresSet.add(program.matiere);
-    //     });
-    //     return Array.from(matieresSet);
-    // }, [programs]);
+    const classes = useMemo(
+        () =>
+            Array.from(
+                new Set(
+                    programs
+                        .filter(
+                            (p) =>
+                                !selectedParcours ||
+                                parcoursOf(p) === selectedParcours,
+                        )
+                        .map(classeOf),
+                ),
+            ).sort(),
+        [programs, selectedParcours],
+    );
 
-    // Filter programs
-    const filteredPrograms = React.useMemo(() => {
-        return programs.filter((program) => {
-            const programParcours = program.matiere.classe.parcours.name;
-            const programClasse = program.matiere.classe.name;
+    const groupedPrograms = useMemo(() => {
+        const term = searchTerm.toLowerCase();
+        const grouped: Record<string, Record<string, Programme[]>> = {};
 
-            const matchesSearch =
-                program.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                program.matiere.name
-                    .toLowerCase()
-                    .includes(searchTerm.toLowerCase());
-            const matchesParcours =
-                !selectedParcours || programParcours === selectedParcours;
-            const matchesClasse =
-                !selectedClasse || programClasse === selectedClasse;
+        programs
+            .filter(
+                (p) =>
+                    (p.name.toLowerCase().includes(term) ||
+                        p.matiere.name.toLowerCase().includes(term)) &&
+                    (!selectedParcours || parcoursOf(p) === selectedParcours) &&
+                    (!selectedClasse || classeOf(p) === selectedClasse),
+            )
+            .forEach((program) => {
+                const pa = parcoursOf(program);
+                const cl = classeOf(program);
+                grouped[pa] ??= {};
+                grouped[pa][cl] ??= [];
+                grouped[pa][cl].push(program);
+            });
 
-            return matchesSearch && matchesParcours && matchesClasse;
-        });
+        return grouped;
     }, [programs, searchTerm, selectedParcours, selectedClasse]);
 
-    // Regrouper les programmes par parcours et classes
-    const groupedPrograms = React.useMemo(() => {
-        const grouped: Record<string, Record<string, Program[]>> = {};
-        filteredPrograms.forEach((program) => {
-            const programParcours = program.matiere.classe.parcours.name;
-            const programClasse = program.matiere.classe.name;
-
-            if (!grouped[programParcours]) {
-                grouped[programParcours] = {};
-            }
-            if (!grouped[programParcours][programClasse]) {
-                grouped[programParcours][programClasse] = [];
-            }
-            grouped[programParcours][programClasse].push(program);
-        });
-        return grouped;
-    }, [filteredPrograms]);
-    const calculateProgress = (chapters: Chapter[]) => {
-        if (!chapters.length) return 0;
-        return Math.round(
-            (chapters.filter((c) => c.isFinished).length / chapters.length) *
-                100,
-        );
-    };
+    const selectClass =
+        'rounded-md border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200';
 
     return (
         <Authenticated>
-            <div className="min-h-screen">
             <Head title={title} />
-                <header className="mb-4 flex items-center justify-between">
-                    <div>
-                        <h1 className="mb-2 text-3xl font-bold text-gray-900">
-                            {title}
-                        </h1>
-                        {/* <p className="text-gray-600">
-                            Suivez vos progrès éducatifs à travers tous les
-                            parcours
-                        </p> */}
-                    </div>
-                </header>
-                <SearchFilter
-                    onSearch={setSearchTerm}
-                    onParcoursFilter={setSelectedParcours}
-                    onClasseFilter={setSelectedClasse}
-                    parcours={parcours}
-                    classes={classes}
-                />
+            <h1 className="mb-4 text-3xl font-bold text-gray-900 dark:text-gray-100">
+                {title}
+            </h1>
 
-                {/* Parcours */}
-                {Object.entries(groupedPrograms).map(([parcours, classes]) => (
-                    <Card key={parcours} className="mb-6">
-                        <div className="p-6">
-                            {/* Titre du parcours */}
-                            <div className="mb-6 flex items-center gap-2 text-xl font-semibold">
-                                <School className="h-6 w-6 text-blue-600" />
-                                {parcours}
-                            </div>
-
-                            {/* Classes du parcours */}
-                            {Object.entries(classes).map(
-                                ([classe, programs]) => (
-                                    <div
-                                        key={classe}
-                                        className="mb-6 last:mb-0"
-                                    >
-                                        {/* Titre de la classe */}
-                                        <div className="mb-4 flex items-center gap-2">
-                                            <GraduationCap className="h-5 w-5 text-gray-600" />
-                                            <h3 className="text-lg font-medium text-gray-800">
-                                                {classe}
-                                            </h3>
-                                        </div>
-
-                                        {/* Programmes de la classe */}
-                                        <div
-                                            className="scrollbar-hide overflow-x-auto" // Masque la barre de défilement dans certains navigateurs
-                                        >
-                                            <div
-                                                className="flex gap-4" // Aligne les éléments horizontalement avec un espacement
-                                            >
-                                                {programs.map((program) => {
-                                                    const progress =
-                                                        calculateProgress(
-                                                            program.chapitres,
-                                                        );
-                                                    return (
-                                                        <Card
-                                                            key={program.id}
-                                                            className="min-w-[300px] max-w-[300px] flex-shrink-0 transition-shadow hover:shadow-lg"
-                                                        >
-                                                            <div className="p-6">
-                                                                <div className="mb-4 flex items-start justify-between">
-                                                                    <div>
-                                                                        <h4 className="font-semibold text-gray-900">
-                                                                            {
-                                                                                program.name
-                                                                            }
-                                                                        </h4>
-                                                                        <p className="text-sm text-gray-600">
-                                                                            {
-                                                                                program
-                                                                                    .matiere
-                                                                                    .name
-                                                                            }
-                                                                        </p>
-                                                                    </div>
-                                                                    <div className="flex gap-2">
-                                                                        <ProgramEditModal
-                                                                            program={
-                                                                                program
-                                                                            }
-                                                                        />
-                                                                    </div>
-                                                                </div>
-
-                                                                {/* Progression */}
-                                                                <div className="mb-6">
-                                                                    <div className="mb-2 flex items-center justify-between">
-                                                                        <span className="text-sm font-medium text-gray-700">
-                                                                            Progression
-                                                                        </span>
-                                                                        <span className="text-sm font-semibold text-blue-600">
-                                                                            {
-                                                                                progress
-                                                                            }
-                                                                            %
-                                                                        </span>
-                                                                    </div>
-                                                                    <div className="h-2 w-full rounded-full bg-gray-200">
-                                                                        <div
-                                                                            className="h-2 rounded-full bg-blue-600 transition-all"
-                                                                            style={{
-                                                                                width: `${progress}%`,
-                                                                            }}
-                                                                        />
-                                                                    </div>
-                                                                </div>
-
-                                                                {/* Chapitres */}
-                                                                <div className="space-y-3">
-                                                                    {program.chapitres.map(
-                                                                        (
-                                                                            chapter,
-                                                                        ) => (
-                                                                            <ChapterCard
-                                                                                key={
-                                                                                    chapter.id
-                                                                                }
-                                                                                chapter={
-                                                                                    chapter
-                                                                                }
-                                                                                program={
-                                                                                    program
-                                                                                }
-                                                                            />
-                                                                        ),
-                                                                    )}
-                                                                    {program
-                                                                        .chapitres
-                                                                        .length ===
-                                                                        0 && (
-                                                                        <div className="rounded-lg bg-blue-50 p-4 text-blue-700">
-                                                                            Aucun
-                                                                            chapitre
-                                                                            disponible
-                                                                            pour
-                                                                            l’instant.
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        </Card>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-                                    </div>
-                                ),
-                            )}
-                        </div>
-                    </Card>
-                ))}
+            <div className="mb-6 flex flex-wrap gap-4 rounded-lg bg-white p-4 shadow-sm dark:bg-gray-900">
+                <div className="relative min-w-[200px] flex-1">
+                    <input
+                        type="text"
+                        placeholder="Rechercher un programme ou une matière..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full rounded-md border border-gray-300 py-2 pl-10 pr-4 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+                    />
+                    <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+                </div>
+                <select
+                    value={selectedParcours}
+                    onChange={(e) => {
+                        setSelectedParcours(e.target.value);
+                        setSelectedClasse('');
+                    }}
+                    className={selectClass}
+                >
+                    <option value="">Tous les parcours</option>
+                    {parcours.map((p) => (
+                        <option key={p} value={p}>
+                            {p}
+                        </option>
+                    ))}
+                </select>
+                <select
+                    value={selectedClasse}
+                    onChange={(e) => setSelectedClasse(e.target.value)}
+                    className={selectClass}
+                >
+                    <option value="">Toutes les classes</option>
+                    {classes.map((c) => (
+                        <option key={c} value={c}>
+                            {c}
+                        </option>
+                    ))}
+                </select>
             </div>
+
+            {Object.keys(groupedPrograms).length === 0 && (
+                <p className="rounded-lg bg-blue-50 p-4 text-blue-700">
+                    Aucun programme ne correspond à la recherche.
+                </p>
+            )}
+
+            {Object.entries(groupedPrograms).map(([parcoursName, byClasse]) => (
+                <Card key={parcoursName} className="mb-6">
+                    <div className="p-6">
+                        <div className="mb-6 flex items-center gap-2 text-xl font-semibold">
+                            <School className="h-6 w-6 text-blue-600" />
+                            {parcoursName}
+                        </div>
+
+                        {Object.entries(byClasse).map(([classe, list]) => (
+                            <div key={classe} className="mb-6 last:mb-0">
+                                <div className="mb-4 flex items-center gap-2">
+                                    <GraduationCap className="h-5 w-5 text-gray-600" />
+                                    <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200">
+                                        {classe}
+                                    </h3>
+                                </div>
+
+                                <div className="overflow-x-auto pb-2">
+                                    <div className="flex gap-4">
+                                        {list.map((program) => (
+                                            <Card
+                                                key={program.id}
+                                                className="min-w-[300px] max-w-[300px] flex-shrink-0 transition-shadow hover:shadow-lg"
+                                            >
+                                                <div className="p-6">
+                                                    <div className="mb-4 flex items-start justify-between">
+                                                        <div>
+                                                            <h4 className="font-semibold text-gray-900 dark:text-gray-100">
+                                                                {program.name}
+                                                            </h4>
+                                                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                                {
+                                                                    program
+                                                                        .matiere
+                                                                        .name
+                                                                }
+                                                            </p>
+                                                        </div>
+                                                        <div className="flex">
+                                                            <a
+                                                                href={route(
+                                                                    'programmes.export',
+                                                                    program.id,
+                                                                )}
+                                                                className="rounded-full p-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                                aria-label="Exporter le bilan PDF"
+                                                                title="Exporter le bilan PDF"
+                                                            >
+                                                                <Download className="h-4 w-4 text-gray-600 dark:text-gray-300" />
+                                                            </a>
+                                                            <ProgramEditModal
+                                                                program={
+                                                                    program
+                                                                }
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="mb-6">
+                                                        <div className="mb-2 flex items-center justify-between">
+                                                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                                Progression
+                                                            </span>
+                                                            <span className="text-sm font-semibold text-blue-600">
+                                                                {Math.round(
+                                                                    program.progression,
+                                                                )}
+                                                                %
+                                                            </span>
+                                                        </div>
+                                                        <div className="h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700">
+                                                            <div
+                                                                className="h-2 rounded-full bg-blue-600 transition-all"
+                                                                style={{
+                                                                    width: `${program.progression}%`,
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="space-y-3">
+                                                        {program.chapitres.map(
+                                                            (chapter) => (
+                                                                <ChapterCard
+                                                                    key={
+                                                                        chapter.id
+                                                                    }
+                                                                    chapter={
+                                                                        chapter
+                                                                    }
+                                                                />
+                                                            ),
+                                                        )}
+                                                        {program.chapitres
+                                                            .length === 0 && (
+                                                            <div className="flex items-center gap-2 rounded-lg bg-blue-50 p-4 text-sm text-blue-700">
+                                                                <BookOpen className="h-4 w-4" />
+                                                                Aucun chapitre
+                                                                pour l’instant.
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </Card>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </Card>
+            ))}
         </Authenticated>
     );
 };

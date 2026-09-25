@@ -1,226 +1,109 @@
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import Dropdown from '@/Components/Dropdown';
-import { Alert } from '@/components/ui/alert';
 import { Link, usePage } from '@inertiajs/react';
+import {
+    BookOpen,
+    CheckCircle2,
+    LayoutDashboard,
+    LucideIcon,
+    School,
+    Users,
+    X,
+} from 'lucide-react';
 import { ReactNode, useEffect, useState } from 'react';
-import { FaBell, FaMoon, FaSearch, FaSun, FaUserCircle } from 'react-icons/fa';
+import { FaMoon, FaSun, FaUserCircle } from 'react-icons/fa';
 
-interface User {
-    name: string;
-    email: string;
-    role: string;
-    avatar?: string;
+interface NavItem {
+    label: string;
+    href: string;
+    active: boolean;
+    icon: LucideIcon;
 }
 
-interface AuthenticatedProps {
-    header?: ReactNode;
-    children: ReactNode;
-}
+const navItemsFor = (role: string): NavItem[] => {
+    if (role === 'responsable') {
+        return [
+            {
+                label: 'Tableau de bord',
+                href: route('dashboard.responsable'),
+                active: route().current('dashboard.responsable'),
+                icon: LayoutDashboard,
+            },
+            {
+                label: 'Programmes',
+                href: route('programmes.index'),
+                active: route().current('programmes.*'),
+                icon: BookOpen,
+            },
+            {
+                label: 'Parcours & classes',
+                href: route('parcours.index'),
+                active: route().current('parcours.*'),
+                icon: School,
+            },
+            {
+                label: 'Délégués',
+                href: route('delegues.index'),
+                active: route().current('delegues.*'),
+                icon: Users,
+            },
+        ];
+    }
 
-// const SearchBar = () => (
-//     <div className="relative mx-4 max-w-xl flex-1">
-//         <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-//             <FaSearch className="h-5 w-5 text-gray-400" />
-//         </div>
-//         <input
-//             type="search"
-//             className="block w-full rounded-lg border border-gray-200 bg-gray-50 p-2.5 pl-10 text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
-//             placeholder="Search..."
-//         />
-//     </div>
-// );
+    return [
+        {
+            label: 'Mes rapports',
+            href: route('dashboard.delegue'),
+            active: route().current('dashboard.delegue'),
+            icon: LayoutDashboard,
+        },
+    ];
+};
 
-// const NotificationBell = () => {
-//     const [showNotification, setShowNotification] = useState(false);
+const FlashMessage = () => {
+    const { flash } = usePage().props;
+    const [visible, setVisible] = useState<string | null>(null);
 
-//     return (
-//         <div className="relative">
-//             <button
-//                 onClick={() => setShowNotification(!showNotification)}
-//                 className="relative rounded-full p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-300"
-//             >
-//                 <FaBell className="h-6 w-6" />
-//                 <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white">
-//                     3
-//                 </span>
-//             </button>
-//             {showNotification && (
-//                 <div className="absolute right-0 mt-2 w-80 rounded-lg bg-white p-4 shadow-lg dark:bg-gray-800">
-//                     <Alert>
-//                         <div className="mb-2 font-semibold">
-//                             New Notification
-//                         </div>
-//                         <div className="text-sm text-gray-500">
-//                             You have a new message
-//                         </div>
-//                     </Alert>
-//                 </div>
-//             )}
-//         </div>
-//     );
-// };
+    useEffect(() => {
+        const message = flash?.success ?? flash?.error ?? null;
+        setVisible(message);
+        if (!message) return;
+        const timer = setTimeout(() => setVisible(null), 4000);
+        return () => clearTimeout(timer);
+    }, [flash]);
 
-const UserAvatar = ({ user }: { user: User }) => (
-    <div className="flex items-center space-x-4">
-        <div className="hidden text-right md:block">
-            <div className="text-sm font-semibold text-gray-700 dark:text-gray-200">
-                {user.name}
-            </div>
-            <div className="text-xs text-gray-500">{user.role}</div>
-        </div>
-        {user.avatar ? (
-            <img
-                src={user.avatar}
-                alt={user.name}
-                className="h-10 w-10 rounded-full border-2 border-gray-200 dark:border-gray-700"
-            />
-        ) : (
-            <FaUserCircle className="h-10 w-10 text-gray-400" />
-        )}
-    </div>
-);
+    if (!visible) return null;
 
-const Navigation = ({
-    user,
-    sidebarOpen,
-}: {
-    user: User;
-    sidebarOpen: boolean;
-}) => {
-    const navItemClass = `flex items-center rounded-lg px-4 py-3 text-gray-700 transition-all duration-200 
-      hover:bg-blue-50 hover:text-blue-700 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white
-      ${sidebarOpen ? 'opacity-100' : 'opacity-0'}`;
+    const isError = !flash?.success && !!flash?.error;
 
     return (
-        <nav className="space-y-1">
-            <Link href={route('dashboard')} className={navItemClass}>
-                <svg
-                    className="mr-3 h-5 w-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                >
-                    <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-                    />
-                </svg>
-                <span
-                    className={`transition-all duration-200 ${sidebarOpen ? 'opacity-100' : 'opacity-0'}`}
-                >
-                    Dashboard
-                </span>
-            </Link>
-
-            <Link
-                href={
-                    user.role === 'responsable' ? route('programmes.index') : ''
-                }
-                className={navItemClass}
+        <div
+            role="status"
+            className={`fixed bottom-6 right-6 z-[60] flex max-w-sm items-center gap-3 rounded-lg px-4 py-3 text-sm shadow-lg ${
+                isError ? 'bg-red-600 text-white' : 'bg-green-600 text-white'
+            }`}
+        >
+            <CheckCircle2 className="h-5 w-5 shrink-0" />
+            <span>{visible}</span>
+            <button
+                onClick={() => setVisible(null)}
+                aria-label="Fermer"
+                className="ml-2 opacity-80 hover:opacity-100"
             >
-                <svg
-                    className="mr-3 h-5 w-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                >
-                    <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                    />
-                </svg>
-                <span
-                    className={`transition-all duration-200 ${sidebarOpen ? 'opacity-100' : 'opacity-0'}`}
-                >
-                    {user.role === 'responsable' ? 'Programmes' : 'Activités'}
-                </span>
-            </Link>
-
-            {user.role === 'responsable' && (
-                <>
-                    <Link
-                        href={route('classes.index')}
-                        className={navItemClass}
-                    >
-                        <svg
-                            className="mr-3 h-5 w-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                            />
-                        </svg>
-                        <span
-                            className={`transition-all duration-200 ${sidebarOpen ? 'opacity-100' : 'opacity-0'}`}
-                        >
-                            Parcours
-                        </span>
-                    </Link>
-
-                    <Link href={route('dashboard')} className={navItemClass}>
-                        <svg
-                            className="mr-3 h-5 w-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                            />
-                        </svg>
-                        <span
-                            className={`transition-all duration-200 ${sidebarOpen ? 'opacity-100' : 'opacity-0'}`}
-                        >
-                            Matières
-                        </span>
-                    </Link>
-
-                    <Link
-                        href={route('delegues.index')}
-                        className={navItemClass}
-                    >
-                        <svg
-                            className="mr-3 h-5 w-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                            />
-                        </svg>
-                        <span
-                            className={`transition-all duration-200 ${sidebarOpen ? 'opacity-100' : 'opacity-0'}`}
-                        >
-                            Délégués
-                        </span>
-                    </Link>
-                </>
-            )}
-        </nav>
+                <X className="h-4 w-4" />
+            </button>
+        </div>
     );
 };
 
 export default function Authenticated({
     header,
     children,
-}: AuthenticatedProps) {
-    const user = usePage().props.auth.user as User;
+}: {
+    header?: ReactNode;
+    children: ReactNode;
+}) {
+    const user = usePage().props.auth.user;
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [theme, setTheme] = useState(() => {
         if (typeof window === 'undefined') return 'light';
@@ -244,14 +127,17 @@ export default function Authenticated({
         });
     };
 
+    const navItems = navItemsFor(user.role);
+
     return (
-        <div className="h-screen overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+        <div className="flex h-screen flex-col overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
             <nav className="border-b border-gray-100 bg-white/80 backdrop-blur-lg dark:border-gray-700 dark:bg-gray-800/80">
                 <div className="mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex h-16 items-center justify-between">
                         <div className="flex items-center">
                             <button
                                 onClick={() => setSidebarOpen(!sidebarOpen)}
+                                aria-label="Menu"
                                 className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
                             >
                                 <svg
@@ -277,12 +163,10 @@ export default function Authenticated({
                             </Link>
                         </div>
 
-                        {/* <SearchBar /> */}
-
                         <div className="flex items-center space-x-4">
-                            {/* <NotificationBell /> */}
                             <button
                                 onClick={toggleTheme}
+                                aria-label="Changer de thème"
                                 className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
                             >
                                 {theme === 'light' ? (
@@ -293,21 +177,30 @@ export default function Authenticated({
                             </button>
                             <Dropdown>
                                 <Dropdown.Trigger>
-                                    <UserAvatar user={user} />
+                                    <button className="flex items-center space-x-4">
+                                        <div className="hidden text-right md:block">
+                                            <div className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+                                                {user.name}
+                                            </div>
+                                            <div className="text-xs text-gray-500">
+                                                {user.role === 'responsable'
+                                                    ? 'Responsable'
+                                                    : 'Délégué'}
+                                            </div>
+                                        </div>
+                                        <FaUserCircle className="h-10 w-10 text-gray-400" />
+                                    </button>
                                 </Dropdown.Trigger>
                                 <Dropdown.Content>
-                                    <Dropdown.Link href="">
-                                        Profile
-                                    </Dropdown.Link>
-                                    <Dropdown.Link href="">
-                                        Settings
+                                    <Dropdown.Link href={route('profile.edit')}>
+                                        Profil
                                     </Dropdown.Link>
                                     <Dropdown.Link
                                         href={route('logout')}
                                         method="post"
                                         as="button"
                                     >
-                                        Log Out
+                                        Se déconnecter
                                     </Dropdown.Link>
                                 </Dropdown.Content>
                             </Dropdown>
@@ -316,17 +209,30 @@ export default function Authenticated({
                 </div>
             </nav>
 
-            <div className="flex">
+            <div className="flex min-h-0 flex-1">
                 <aside
                     className={`fixed inset-y-0 left-0 z-50 mt-16 w-64 transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} border-r border-gray-200 bg-white/80 backdrop-blur-lg dark:border-gray-700 dark:bg-gray-800/80`}
                 >
-                    <div className="h-full overflow-y-auto px-4 py-6">
-                        <Navigation user={user} sidebarOpen={sidebarOpen} />
-                    </div>
+                    <nav className="space-y-1 px-4 py-6">
+                        {navItems.map((item) => (
+                            <Link
+                                key={item.label}
+                                href={item.href}
+                                className={`flex items-center rounded-lg px-4 py-3 transition-all duration-200 ${
+                                    item.active
+                                        ? 'bg-blue-50 font-medium text-blue-700 dark:bg-gray-700 dark:text-white'
+                                        : 'text-gray-700 hover:bg-blue-50 hover:text-blue-700 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white'
+                                }`}
+                            >
+                                <item.icon className="mr-3 h-5 w-5" />
+                                {item.label}
+                            </Link>
+                        ))}
+                    </nav>
                 </aside>
 
                 <main
-                    className={`flex-1 transform transition-all duration-300 ease-in-out ${sidebarOpen ? 'ml-64' : 'ml-0'} `}
+                    className={`flex-1 overflow-y-auto transition-all duration-300 ease-in-out ${sidebarOpen ? 'ml-64' : 'ml-0'}`}
                 >
                     {header && (
                         <header className="bg-white/80 shadow backdrop-blur-lg dark:bg-gray-800/80">
@@ -342,6 +248,8 @@ export default function Authenticated({
                     </div>
                 </main>
             </div>
+
+            <FlashMessage />
         </div>
     );
 }

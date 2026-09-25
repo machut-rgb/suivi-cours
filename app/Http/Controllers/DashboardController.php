@@ -2,59 +2,43 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Activite;
 use App\Models\Programme;
-use Illuminate\Http\Request;
-use Inertia\Inertia;
+use App\Services\ProgressionService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    public function index()
+    /**
+     * Point d'entrée unique : redirige vers le tableau de bord du rôle.
+     */
+    public function index(): RedirectResponse
     {
-        // Redirection selon le rôle de l'utilisateur
-        if (Auth::user()->role === 'responsable') {
-            return redirect()->route('dashboard.responsable');
-        } elseif (Auth::user()->role === 'delegue') {
-            return redirect()->route('dashboard.delegue');
-        }
-
-        return abort(403, 'Unauthorized, not a responsable or delegue');
+        return match (Auth::user()->role) {
+            'responsable' => redirect()->route('dashboard.responsable'),
+            'delegue' => redirect()->route('dashboard.delegue'),
+            default => abort(403, 'Unauthorized, not a responsable or delegue'),
+        };
     }
 
-    public function responsable()
+    public function responsable(ProgressionService $progression): Response
     {
-        // Redirection selon le rôle de l'utilisateur
-        if (Auth::user()->role === 'responsable') {
-            // dd(Programme::with('matiere.classe')->get()->toArray());
-            $programs = Programme::with([
-                'matiere.classe.parcours',       // Fetch classes and parcours
-                'chapitres.activites',           // Fetch chapters and their activities
-            ])->get();
-            
-            return Inertia::render('Responsable/Dashboard', [
-                'title' => 'Tableau de Bord - Responsable',
-                'programs' => $programs,
-            ]);
-        } elseif (Auth::user()->role === 'delegue') {
-            return redirect()->route('dashboard.delegue');
-        }
+        $programs = Programme::with([
+            'matiere.classe.parcours',
+            'chapitres' => fn ($q) => $q->orderBy('id'),
+            'chapitres.activites:id,chapitre_id,date',
+        ])->get();
 
-        return abort(403, 'Unauthorized, not a responsable or delegue');
-    }
+        $programs->each(function (Programme $programme) use ($progression) {
+            $programme->setAttribute('progression', $progression->percentage($programme));
+            $programme->setAttribute('monthly', $progression->monthly($programme));
+        });
 
-    public function delegue()
-    {
-        // Redirection selon le rôle de l'utilisateur
-        if (Auth::user()->role === 'responsable') {
-            return redirect()->route('dashboard.responsable');
-        } elseif (Auth::user()->role === 'delegue') {
-            return Inertia::render('Delegue/Dashboard', [
-                'title' => 'Tableau de Bord - Délégué',
-                'activities' => Activite::where('user_id', Auth::id())->get(), // Exemple de données
-            ]);
-        }
-
-        return abort(403, 'Unauthorized, not a responsable or delegue');
+        return Inertia::render('Responsable/Dashboard', [
+            'title' => 'Tableau de Bord - Responsable',
+            'programs' => $programs,
+        ]);
     }
 }

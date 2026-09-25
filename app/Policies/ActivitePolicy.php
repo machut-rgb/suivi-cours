@@ -3,64 +3,37 @@
 namespace App\Policies;
 
 use App\Models\Activite;
+use App\Models\Chapitre;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class ActivitePolicy
 {
     /**
-     * Determine whether the user can view any models.
+     * A délégué can only report on chapters of their own class.
      */
-    public function viewAny(User $user): bool
+    public function create(User $user, Chapitre $chapitre): bool
     {
-        return true;
+        return $user->isDelegue() && $this->chapitreInUserClasse($user, $chapitre);
     }
 
     /**
-     * Determine whether the user can view the model.
+     * Only the author can edit a report, and it must stay within their class.
      */
-    public function view(User $user, Activite $activite): bool
+    public function update(User $user, Activite $activite, ?Chapitre $chapitre = null): bool
     {
-        return true;
+        return $user->isDelegue()
+            && $activite->user_id === $user->id
+            && ($chapitre === null || $this->chapitreInUserClasse($user, $chapitre));
     }
 
-    /**
-     * Determine whether the user can create models.
-     */
-    public function create(User $user): bool
-    {
-        return $user->role === 'delegue';
-    }
-
-    /**
-     * Determine whether the user can update the model.
-     */
-    public function update(User $user, Activite $activite): bool
-    {
-        return $user->role === 'delegue';
-    }
-
-    /**
-     * Determine whether the user can delete the model.
-     */
     public function delete(User $user, Activite $activite): bool
     {
-        return $user->role === 'delegue';
+        return $user->isDelegue() && $activite->user_id === $user->id;
     }
 
-    /**
-     * Determine whether the user can restore the model.
-     */
-    public function restore(User $user, Activite $activite): bool
+    private function chapitreInUserClasse(User $user, Chapitre $chapitre): bool
     {
-        return $user->role === 'delegue';
-    }
-
-    /**
-     * Determine whether the user can permanently delete the model.
-     */
-    public function forceDelete(User $user, Activite $activite): bool
-    {
-        return $user->role === 'delegue';
+        return $user->classe_id !== null
+            && $chapitre->programme->matiere->classe_id === $user->classe_id;
     }
 }

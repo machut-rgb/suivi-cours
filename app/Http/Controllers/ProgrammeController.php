@@ -1,144 +1,80 @@
 <?php
+
 namespace App\Http\Controllers;
 
-use App\Models\Chapitre;
-use App\Models\Parcours;
+use App\Http\Requests\UpdateProgrammeRequest;
 use App\Models\Programme;
-use Illuminate\Http\Request;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use App\Services\ProgressionService;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
-use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Log;
+use Inertia\Response;
 
 class ProgrammeController extends Controller
 {
-    use AuthorizesRequests;
-    public function __construct()
-    {
-        // Authorize resource actions for the Programme model
-        // $this->authorizeResource(Programme::class, 'programme');
-    }
-
     /**
-     * Afficher la liste des programmes.
+     * Liste des programmes, regroupés par parcours et classe côté client.
      */
-    public function index()
+    public function index(ProgressionService $progression): Response
     {
-        if (!Gate::allows('responsable')) {
-            abort(403, 'You are not a responsable.');
-        }
-        // $this->authorize('viewAny', Programme::class);
-        $programmes = Programme::with('matiere.classe.parcours', 'chapitres.activites')->get();
+        $programmes = Programme::with([
+            'matiere.classe.parcours',
+            'chapitres' => fn ($q) => $q->orderBy('id'),
+            'chapitres.activites' => fn ($q) => $q->with('user:id,name')->orderByDesc('date'),
+        ])->get();
+
+        $programmes->each(fn (Programme $p) => $p->setAttribute('progression', $progression->percentage($p)));
 
         return Inertia::render('Responsable/Programs', [
-            'title' => "Programmes",
-            'programs' => $programmes,
-        ]);
-    }
-
-    /**
-     * Afficher un programme spécifique.
-     */
-    public function show(Programme $programme)
-    {
-        $programme->load('matiere.classe', 'activites');
-        return response()->json($programme);
-    }
-
-    /**
-     * Créer un nouveau programme.
-     */
-    public function store(Request $request)
-    {
-        // Journaux pour debug
-        $programme = Programme::find($request->programme_id);
-        Log::info('Request data: ', $request->all());
-
-        // Désérialisation des champs JSON
-        $chapters = json_decode($request->input('chapters'), true);
-
-        // Validation
-        // $validatedData = $request->validate([
-        //     'chapters' => 'required|array',
-        //     'chapters.*.title' => 'required|string',
-        //     // 'chapters.*.isFinished' => 'required|int',
-        //     'programme_id' => 'required|int'
-        // ]);
-
-        
-        $programme->name = $request->name;
-        $programme->save();
-        
-        // Log::info("Programme : ". $programme);
-
-
-        // Enregistrer les chapitres associés
-        foreach ($chapters as $chapter) {
-            if (isset($chapter["id"])) {
-                $chap = Chapitre::find($chapter['id']);
-                $chap->title = $chapter['title'];
-                $chap->save();
-            } else {
-                $programme->chapitres()->create([
-                    'title' => $chapter['title'],
-                ]);
-            }
-        }
-        $chap2rem = json_decode($request->input('chap2remove'));
-        if (isset($chap2rem) ) {
-            foreach ($chap2rem as $c2r) {
-                if($c2r)
-                    if(Chapitre::find($c2r))    
-                        Chapitre::find($c2r)->delete();
-            }
-        }
-
-        // return response()->json([
-        //     'success' => true,
-        //     'message' => 'Programme enregistré avec succès',
-        //     'programme' => Programme::find($programme->id),
-        // ]);
-
-        $programmes = Programme::with('matiere.classe.parcours', 'chapitres.activites')->get();
-
-        return Inertia::render('Responsable/Programs', [
-            'status' => session('status'),
-            'success' => true,
-            'message' => 'Programme enregistré avec succès',
             'title' => 'Programmes',
             'programs' => $programmes,
         ]);
     }
 
-
     /**
-     * Mettre à jour un programme existant.
+     * Renommer le programme et synchroniser ses chapitres (création, renommage, statut, suppression).
      */
-    public function update(Request $request, Programme $programme)
+    public function update(UpdateProgrammeRequest $request, Programme $programme): RedirectResponse
     {
-        $validated = $request->validate([
-            'matiere_id' => 'required|exists:matieres,id',
-            'objectif' => 'required|string',
-            'chapitres' => 'required|array',
-            'statut' => 'required|in:en cours,termine',
-        ]);
+        $data = $request->validated();
+        $ownedIds = $programme->chapitres()->pluck('id');
 
-        $programme->update([
-            'matiere_id' => $validated['matiere_id'],
-            'objectif' => $validated['objectif'],
-            'chapitres' => $validated['chapitres'],
-            'statut' => $validated['statut'],
-        ]);
+        // Reject chapter ids that belong to another programme instead of silently editing them.
+        $foreignIds = collect($data['chapters'])
+            ->pluck('id')
+            ->filter()
+            ->merge($data['removed_chapter_ids'] ?? [])
+            ->diff($ownedIds);
 
-        return response()->json($programme);
-    }
+        if ($foreignIds->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'chapters' => 'Un ou plusieurs chapitres n\'appartiennent pas à ce programme.',
+            ]);
+        }
 
-    /**
-     * Supprimer un programme.
-     */
-    public function destroy(Programme $programme)
-    {
-        $programme->delete();
-        return response()->json(null, 204);
+        DB::transaction(function () use ($programme, $data) {
+            $programme->update(['name' => $data['name']]);
+
+            if (! empty($data['removed_chapter_ids'])) {
+                $programme->chapitres()->whereIn('id', $data['removed_chapter_ids'])->delete();
+            }
+
+            foreach ($data['chapters'] as $chapter) {
+                $attributes = [
+                    'title' => $chapter['title'],
+                    'isFinished' => (bool) $chapter['isFinished'],
+                ];
+
+                if (! empty($chapter['id'])) {
+                    // Model save (not a mass update) so the finished_at hook runs.
+                    $programme->chapitres()->findOrFail($chapter['id'])->fill($attributes)->save();
+                } else {
+                    $programme->chapitres()->create($attributes);
+                }
+            }
+        });
+
+        return back()->with('success', 'Programme enregistré avec succès.');
     }
 }

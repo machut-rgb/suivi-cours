@@ -2,63 +2,31 @@
 
 namespace App\Http\Controllers;
 
-use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Http\Request;
 use App\Models\Programme;
+use App\Services\ProgressionService;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Response;
+use Illuminate\Support\Str;
 
 class ProgrammeExportController extends Controller
 {
-    public function exportPdf(Programme $programme)
+    public function exportPdf(Programme $programme, ProgressionService $progression): Response
     {
-        $data = [
-            'programme' => $programme->load([
-                'matiere.classe.parcours',
-                'chapitres.activites'
-            ]),
-            'progression' => $this->calculateProgression($programme),
-            'monthlyData' => $this->getMonthlyProgression($programme),
-            'exportDate' => now()->format('d/m/Y')
-        ];
+        $programme->load([
+            'matiere.classe.parcours',
+            'chapitres' => fn ($q) => $q->orderBy('id'),
+            'chapitres.activites' => fn ($q) => $q->with('user:id,name')->orderBy('date'),
+        ]);
 
-        $pdf = PDF::loadView('exports.programme-bilan', $data);
-        
-        return $pdf->download("bilan-{$programme->matiere->name}-{$programme->matiere->classe->name}.pdf");
-    }
+        $pdf = Pdf::loadView('exports.programme-bilan', [
+            'programme' => $programme,
+            'progression' => $progression->percentage($programme),
+            'monthlyData' => $progression->monthly($programme),
+            'exportDate' => now()->format('d/m/Y'),
+        ]);
 
-    private function calculateProgression($programme)
-    {
-        $totalChapters = $programme->chapitres->count();
-        if (!$totalChapters) return 0;
-        
-        $completedChapters = $programme->chapitres->where('isFinished', true)->count();
-        return ($completedChapters / $totalChapters) * 100;
-    }
+        $filename = Str::slug("bilan-{$programme->matiere->name}-{$programme->matiere->classe->name}").'.pdf';
 
-    private function getMonthlyProgression($programme)
-    {
-        $monthlyProgress = [];
-        
-        foreach ($programme->chapitres as $chapitre) {
-            foreach ($chapitre->activites as $activity) {
-                $month = $activity->created_at->format('Y-m');
-                
-                if (!isset($monthlyProgress[$month])) {
-                    $monthlyProgress[$month] = ['total' => 0, 'completed' => 0];
-                }
-                
-                $monthlyProgress[$month]['total']++;
-                if ($chapitre->isFinished) {
-                    $monthlyProgress[$month]['completed']++;
-                }
-            }
-        }
-
-        return collect($monthlyProgress)->map(function ($data) {
-            return [
-                'completed' => $data['completed'],
-                'total' => $data['total'],
-                'percentage' => ($data['completed'] / $data['total']) * 100
-            ];
-        })->toArray();
+        return $pdf->download($filename);
     }
 }

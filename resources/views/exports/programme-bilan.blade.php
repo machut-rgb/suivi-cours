@@ -141,22 +141,26 @@
 
     <div class="info-block">
         <h2 class="section-title">Progression Mensuelle</h2>
+        @if(count($monthlyData) === 0)
+            <p>Aucune activité ni chapitre terminé pour l'instant.</p>
+        @else
         <table class="monthly-table">
             <tr>
                 <th>Mois</th>
-                <th>Progression</th>
-                <th>Activités Complétées</th>
-                <th>Total Activités</th>
+                <th>Progression cumulée</th>
+                <th>Chapitres terminés</th>
+                <th>Activités du mois</th>
             </tr>
-            @foreach($monthlyData as $month => $data)
+            @foreach($monthlyData as $row)
             <tr>
-                <td>{{ \Carbon\Carbon::createFromFormat('Y-m', $month)->format('F Y') }}</td>
-                <td>{{ number_format($data['percentage'], 1) }}%</td>
-                <td>{{ $data['completed'] }}</td>
-                <td>{{ $data['total'] }}</td>
+                <td>{{ ucfirst(\Carbon\Carbon::createFromFormat('Y-m', $row['month'])->locale('fr')->translatedFormat('F Y')) }}</td>
+                <td>{{ number_format($row['progression'], 1) }}%</td>
+                <td>{{ $row['finished'] }} / {{ $row['total'] }}</td>
+                <td>{{ $row['activities'] }}</td>
             </tr>
             @endforeach
         </table>
+        @endif
     </div>
 
     <!-- <div class="page-break"></div> -->
@@ -169,7 +173,7 @@
                     <th colspan="2">
                         {{ $chapitre->title }}
                         <span class="status-badge {{ $chapitre->isFinished ? 'completed' : 'in-progress' }}">
-                            {{ $chapitre->isFinished ? 'Terminé' : 'En cours' }}
+                            {{ $chapitre->isFinished ? 'Terminé' : 'En cours' }}@if($chapitre->finished_at) le {{ $chapitre->finished_at->format('d/m/Y') }}@endif
                         </span>
                     </th>
                 </tr>
@@ -187,7 +191,7 @@
                             <li>
                                 {{ $activite->note }}
                                 <span class="text-sm text-gray-500">
-                                    ({{ $activite->created_at->format('d/m/Y') }})
+                                    ({{ $activite->date->format('d/m/Y') }}@if($activite->user) — {{ $activite->user->name }}@endif)
                                 </span>
                             </li>
                             @endforeach
