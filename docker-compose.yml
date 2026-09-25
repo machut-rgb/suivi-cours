@@ -1,0 +1,17 @@
+# Production-like single-container deployment.
+#   cp .env.production.example .env.production   # then fill in APP_KEY, APP_URL, mail...
+#   docker compose up -d --build
+#   docker compose exec app php artisan app:create-responsable you@school.fr
+services:
+  app:
+    build: .
+    image: suiviapp:latest
+    env_file: .env.production
+    ports:
+      - "8080:80"
+    volumes:
+      - suiviapp-storage:/var/www/html/storage
+    restart: unless-stopped
+
+volumes:
+  suiviapp-storage:

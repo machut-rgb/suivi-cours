@@ -62,3 +62,33 @@ jobs:
       run: npx eslint resources/js --ext .ts,.tsx
     - name: Typecheck and build (client + SSR)
       run: npm run build
+
+  docker:
+    name: Docker image build & smoke test
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build image
+      run: docker build -t suiviapp:ci .
+    - name: Start container (SQLite in the storage volume)
+      run: |
+        docker run -d --name suiviapp -p 8080:80 \
+          -e APP_KEY="base64:$(openssl rand -base64 32)" \
+          -e APP_URL=http://localhost:8080 \
+          suiviapp:ci
+    - name: Smoke test
+      run: |
+        for i in $(seq 1 30); do
+          curl -fsS http://localhost:8080/up > /dev/null && break
+          sleep 2
+        done
+        curl -fsS http://localhost:8080/up > /dev/null
+        curl -fsS http://localhost:8080/login | grep -q '<div id="app"'
+        test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/dashboard)" = "302"
+        docker exec -u www-data suiviapp php artisan app:create-responsable ci@example.com --password=ci-password-123
+        docker exec -u www-data suiviapp php artisan migrate:status | grep -q add_classe_and_approval_to_users_table
+        test -z "$(curl -sI http://localhost:8080/login | grep -i '^x-powered-by')"
+    - name: Container logs
+      if: always()
+      run: docker logs suiviapp

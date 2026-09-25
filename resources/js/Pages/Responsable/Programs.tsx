@@ -428,7 +428,9 @@ const ProgramDashboard = ({
 
             {Object.keys(groupedPrograms).length === 0 && (
                 <p className="rounded-lg bg-blue-50 p-4 text-blue-700">
-                    Aucun programme ne correspond à la recherche.
+                    {programs.length === 0
+                        ? 'Aucun programme pour l’instant. Créez une matière dans « Parcours & classes » : son programme est créé automatiquement.'
+                        : 'Aucun programme ne correspond à la recherche.'}
                 </p>
             )}
 

@@ -71,6 +71,18 @@ Demo accounts (password `password`):
 | `delegue2@example.com` | Délégué, Première S2 |
 | `delegue3@example.com` | Délégué, pending approval |
 
+## Deployment
+
+The app ships as a Docker image: Apache + PHP 8.2, SQLite in a persistent volume by default, and PostgreSQL/MySQL supported.
+
+```bash
+cp .env.production.example .env.production   # fill in APP_KEY, APP_URL, mail
+docker compose up -d --build
+docker compose exec -u www-data app php artisan app:create-responsable you@school.fr
+```
+
+Full guide: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md). It covers VPS and PaaS setups, the database choice, updates and a security checklist.
+
 ## Quality checks
 
 ```bash
