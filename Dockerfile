@@ -1,10 +1,15 @@
 # syntax=docker/dockerfile:1
 
 # ---- 1. PHP dependencies (production only) ----------------------------------
-FROM composer:2 AS vendor
+# Resolve on the runtime's PHP version: the composer image tracks the newest PHP,
+# which locked packages may not support yet.
+FROM php:8.2-cli AS vendor
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+RUN apt-get update && apt-get install -y --no-install-recommends git unzip && rm -rf /var/lib/apt/lists/*
+ENV COMPOSER_ALLOW_SUPERUSER=1
 WORKDIR /app
 COPY composer.json composer.lock ./
-# Extensions (gd, pdo_pgsql…) live in the runtime stage, not in the composer image.
+# Extensions (gd, pdo_pgsql…) live in the runtime stage, not in this build stage.
 RUN composer install --no-dev --no-scripts --no-autoloader --no-interaction --no-progress --prefer-dist --ignore-platform-req='ext-*'
 COPY . .
 RUN composer dump-autoload --optimize --classmap-authoritative --no-dev

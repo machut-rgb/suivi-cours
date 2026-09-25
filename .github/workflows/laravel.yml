@@ -91,4 +91,4 @@ jobs:
         test -z "$(curl -sI http://localhost:8080/login | grep -i '^x-powered-by')"
     - name: Container logs
       if: always()
-      run: docker logs suiviapp
+      run: docker logs suiviapp || echo "container was not started"
