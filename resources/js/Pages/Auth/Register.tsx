@@ -6,12 +6,19 @@ import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
 
-export default function Register() {
+interface ClasseOption {
+    id: number;
+    name: string;
+    parcours: { id: number; name: string };
+}
+
+export default function Register({ classes }: { classes: ClasseOption[] }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '',
         email: '',
         password: '',
         password_confirmation: '',
+        classe_id: '',
     });
 
     const submit: FormEventHandler = (e) => {
@@ -59,6 +66,28 @@ export default function Register() {
                     />
 
                     <InputError message={errors.email} className="mt-2" />
+                </div>
+
+                <div className="mt-4">
+                    <InputLabel htmlFor="classe_id" value="Classe" />
+
+                    <select
+                        id="classe_id"
+                        name="classe_id"
+                        value={data.classe_id}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                        onChange={(e) => setData('classe_id', e.target.value)}
+                        required
+                    >
+                        <option value="">Choisir votre classe</option>
+                        {classes.map((classe) => (
+                            <option key={classe.id} value={classe.id}>
+                                {classe.name} ({classe.parcours.name})
+                            </option>
+                        ))}
+                    </select>
+
+                    <InputError message={errors.classe_id} className="mt-2" />
                 </div>
 
                 <div className="mt-4">

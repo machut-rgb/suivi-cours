@@ -12,7 +12,16 @@ use Inertia\Inertia;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DelegueController;
 
-Route::middleware(['auth', 'verified'])->group(function () {
+// Shown to self-registered délégués until a responsable approves them.
+Route::get('/approval-pending', function () {
+    if (auth()->user()->isApproved()) {
+        return redirect()->route('dashboard');
+    }
+
+    return Inertia::render('Auth/PendingApproval');
+})->middleware('auth')->name('approval.pending');
+
+Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/responsable', [DashboardController::class, 'responsable'])->name('dashboard.responsable');
     Route::get('/dashboard/delegue', [DashboardController::class, 'delegue'])->name('dashboard.delegue');
@@ -27,7 +36,7 @@ Route::get('/', function () {
 })->name('welcome');
 
 // Tableau de bord pour les utilisateurs authentifiés
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     // Gestion du profil utilisateur
     Route::prefix('profile')->group(function () {
         Route::get('/', [ProfileController::class, 'edit'])->name('profile.edit');
