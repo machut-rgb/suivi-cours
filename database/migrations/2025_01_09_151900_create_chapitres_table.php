@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('title');
             $table->boolean('isFinished')->default(false);
+            $table->timestamp('finished_at')->nullable();
             $table->foreignId('programme_id')->constrained('programmes')->onDelete('cascade');
             $table->timestamps();
         });

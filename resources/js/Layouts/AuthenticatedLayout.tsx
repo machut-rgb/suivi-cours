@@ -1,21 +1,112 @@
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import Dropdown from '@/Components/Dropdown';
-import NavLink from '@/Components/NavLink';
-import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
 import { Link, usePage } from '@inertiajs/react';
-import { PropsWithChildren, ReactNode, useEffect, useState } from 'react';
-import { FaMoon, FaSun } from 'react-icons/fa';
+import {
+    BookOpen,
+    CheckCircle2,
+    LayoutDashboard,
+    LucideIcon,
+    School,
+    Users,
+    X,
+} from 'lucide-react';
+import { ReactNode, useEffect, useState } from 'react';
+import { FaMoon, FaSun, FaUserCircle } from 'react-icons/fa';
+
+interface NavItem {
+    label: string;
+    href: string;
+    active: boolean;
+    icon: LucideIcon;
+}
+
+const navItemsFor = (role: string): NavItem[] => {
+    if (role === 'responsable') {
+        return [
+            {
+                label: 'Tableau de bord',
+                href: route('dashboard.responsable'),
+                active: route().current('dashboard.responsable'),
+                icon: LayoutDashboard,
+            },
+            {
+                label: 'Programmes',
+                href: route('programmes.index'),
+                active: route().current('programmes.*'),
+                icon: BookOpen,
+            },
+            {
+                label: 'Parcours & classes',
+                href: route('parcours.index'),
+                active: route().current('parcours.*'),
+                icon: School,
+            },
+            {
+                label: 'Délégués',
+                href: route('delegues.index'),
+                active: route().current('delegues.*'),
+                icon: Users,
+            },
+        ];
+    }
+
+    return [
+        {
+            label: 'Mes rapports',
+            href: route('dashboard.delegue'),
+            active: route().current('dashboard.delegue'),
+            icon: LayoutDashboard,
+        },
+    ];
+};
+
+const FlashMessage = () => {
+    const { flash } = usePage().props;
+    const [visible, setVisible] = useState<string | null>(null);
+
+    useEffect(() => {
+        const message = flash?.success ?? flash?.error ?? null;
+        setVisible(message);
+        if (!message) return;
+        const timer = setTimeout(() => setVisible(null), 4000);
+        return () => clearTimeout(timer);
+    }, [flash]);
+
+    if (!visible) return null;
+
+    const isError = !flash?.success && !!flash?.error;
+
+    return (
+        <div
+            role="status"
+            className={`fixed bottom-6 right-6 z-[60] flex max-w-sm items-center gap-3 rounded-lg px-4 py-3 text-sm shadow-lg ${
+                isError ? 'bg-red-600 text-white' : 'bg-green-600 text-white'
+            }`}
+        >
+            <CheckCircle2 className="h-5 w-5 shrink-0" />
+            <span>{visible}</span>
+            <button
+                onClick={() => setVisible(null)}
+                aria-label="Fermer"
+                className="ml-2 opacity-80 hover:opacity-100"
+            >
+                <X className="h-4 w-4" />
+            </button>
+        </div>
+    );
+};
 
 export default function Authenticated({
     header,
     children,
-}: PropsWithChildren<{ header?: ReactNode }>) {
+}: {
+    header?: ReactNode;
+    children: ReactNode;
+}) {
     const user = usePage().props.auth.user;
-    const [showingNavigationDropdown, setShowingNavigationDropdown] =
-        useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [theme, setTheme] = useState(() => {
-        // Check localStorage for the theme or use system preference
+        if (typeof window === 'undefined') return 'light';
         return (
             localStorage.getItem('theme') ||
             (window.matchMedia('(prefers-color-scheme: dark)').matches
@@ -29,46 +120,54 @@ export default function Authenticated({
     }, [theme]);
 
     const toggleTheme = () => {
-        const newTheme = theme === 'light' ? 'dark' : 'light';
-        setTheme(newTheme);
-        localStorage.setItem('theme', newTheme);
+        setTheme((prev) => {
+            const newTheme = prev === 'light' ? 'dark' : 'light';
+            localStorage.setItem('theme', newTheme);
+            return newTheme;
+        });
     };
 
+    const navItems = navItemsFor(user.role);
+
     return (
-        <div className="h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
-            <nav className="border-b border-gray-100 bg-white dark:border-gray-700 dark:bg-gray-800">
+        <div className="flex h-screen flex-col overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+            <nav className="border-b border-gray-100 bg-white/80 backdrop-blur-lg dark:border-gray-700 dark:bg-gray-800/80">
                 <div className="mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex h-16 justify-between">
-                        <div className="flex">
-                            <div className="flex shrink-0 items-center">
-                                <button
-                                    onClick={() => setSidebarOpen(!sidebarOpen)}
-                                    className="rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500"
+                    <div className="flex h-16 items-center justify-between">
+                        <div className="flex items-center">
+                            <button
+                                onClick={() => setSidebarOpen(!sidebarOpen)}
+                                aria-label="Menu"
+                                className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+                            >
+                                <svg
+                                    className="h-6 w-6"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
                                 >
-                                    <svg
-                                        className="h-6 w-6"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth="2"
-                                            d="M4 6h16M4 12h16M4 18h16"
-                                        />
-                                    </svg>
-                                </button>
-                                <Link href="/" className="ml-4">
-                                    <ApplicationLogo className="block h-9 w-auto fill-current text-gray-800 dark:text-gray-200" />
-                                </Link>
-                            </div>
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="2"
+                                        d={
+                                            sidebarOpen
+                                                ? 'M6 18L18 6M6 6l12 12'
+                                                : 'M4 6h16M4 12h16M4 18h16'
+                                        }
+                                    />
+                                </svg>
+                            </button>
+                            <Link href="/" className="ml-4">
+                                <ApplicationLogo className="h-9 w-auto fill-current text-gray-800 dark:text-gray-200" />
+                            </Link>
                         </div>
 
-                        <div className="hidden sm:ms-6 sm:flex sm:items-center">
+                        <div className="flex items-center space-x-4">
                             <button
                                 onClick={toggleTheme}
-                                className="rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+                                aria-label="Changer de thème"
+                                className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
                             >
                                 {theme === 'light' ? (
                                     <FaMoon className="h-6 w-6" />
@@ -76,235 +175,81 @@ export default function Authenticated({
                                     <FaSun className="h-6 w-6" />
                                 )}
                             </button>
-                            <div className="relative ms-3">
-                                <Dropdown>
-                                    <Dropdown.Trigger>
-                                        <span className="inline-flex rounded-md">
-                                            <button
-                                                type="button"
-                                                className="inline-flex items-center rounded-md border border-transparent bg-white px-3 py-2 text-sm font-medium text-gray-500 transition hover:text-gray-700 focus:outline-none dark:bg-gray-800 dark:text-gray-400 dark:hover:text-gray-300"
-                                            >
+                            <Dropdown>
+                                <Dropdown.Trigger>
+                                    <button className="flex items-center space-x-4">
+                                        <div className="hidden text-right md:block">
+                                            <div className="text-sm font-semibold text-gray-700 dark:text-gray-200">
                                                 {user.name}
-                                                <svg
-                                                    className="-me-0.5 ms-2 h-4 w-4"
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    viewBox="0 0 20 20"
-                                                    fill="currentColor"
-                                                >
-                                                    <path
-                                                        fillRule="evenodd"
-                                                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                                                        clipRule="evenodd"
-                                                    />
-                                                </svg>
-                                            </button>
-                                        </span>
-                                    </Dropdown.Trigger>
-                                    <Dropdown.Content>
-                                        <Dropdown.Link
-                                            // href={route('profile.edit')}
-                                            href=""
-                                        >
-                                            Profile
-                                        </Dropdown.Link>
-                                        <Dropdown.Link
-                                            href={route('logout')}
-                                            method="post"
-                                            as="button"
-                                        >
-                                            Log Out
-                                        </Dropdown.Link>
-                                    </Dropdown.Content>
-                                </Dropdown>
-                            </div>
-                        </div>
-
-                        <div className="-me-2 flex items-center sm:hidden">
-                            <button
-                                onClick={() =>
-                                    setShowingNavigationDropdown(
-                                        !showingNavigationDropdown,
-                                    )
-                                }
-                                className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-500 focus:outline-none dark:text-gray-500 dark:hover:bg-gray-900 dark:hover:text-gray-400"
-                            >
-                                <svg
-                                    className="h-6 w-6"
-                                    stroke="currentColor"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        className={
-                                            !showingNavigationDropdown
-                                                ? 'inline-flex'
-                                                : 'hidden'
-                                        }
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M4 6h16M4 12h16M4 18h16"
-                                    />
-                                    <path
-                                        className={
-                                            showingNavigationDropdown
-                                                ? 'inline-flex'
-                                                : 'hidden'
-                                        }
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M6 18L18 6M6 6l12 12"
-                                    />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div
-                    className={
-                        (showingNavigationDropdown ? 'block' : 'hidden') +
-                        ' sm:hidden'
-                    }
-                >
-                    <div className="space-y-1 pb-3 pt-2">
-                        <ResponsiveNavLink
-                            href={route('dashboard')}
-                            active={route().current('dashboard')}
-                        >
-                            Dashboard
-                        </ResponsiveNavLink>
-                    </div>
-                    <div className="border-t border-gray-200 pb-1 pt-4 dark:border-gray-600">
-                        <div className="px-4">
-                            <div className="text-base font-medium text-gray-800 dark:text-gray-200">
-                                {user.name}
-                            </div>
-                            <div className="text-sm font-medium text-gray-500">
-                                {user.email}
-                            </div>
-                        </div>
-                        <div className="mt-3 space-y-1">
-                            <ResponsiveNavLink href={''}>
-                                Profile
-                            </ResponsiveNavLink>
-                            <ResponsiveNavLink
-                                method="post"
-                                href={route('logout')}
-                                as="button"
-                            >
-                                Log Out
-                            </ResponsiveNavLink>
+                                            </div>
+                                            <div className="text-xs text-gray-500">
+                                                {user.role === 'responsable'
+                                                    ? 'Responsable'
+                                                    : 'Délégué'}
+                                            </div>
+                                        </div>
+                                        <FaUserCircle className="h-10 w-10 text-gray-400" />
+                                    </button>
+                                </Dropdown.Trigger>
+                                <Dropdown.Content>
+                                    <Dropdown.Link href={route('profile.edit')}>
+                                        Profil
+                                    </Dropdown.Link>
+                                    <Dropdown.Link
+                                        href={route('logout')}
+                                        method="post"
+                                        as="button"
+                                    >
+                                        Se déconnecter
+                                    </Dropdown.Link>
+                                </Dropdown.Content>
+                            </Dropdown>
                         </div>
                     </div>
                 </div>
             </nav>
 
-            {/* Sidebar */}
-            <div className="flex">
+            <div className="flex min-h-0 flex-1">
                 <aside
-                    className={`${sidebarOpen ? 'block' : 'hidden'} min-h-screen w-64 border-r border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800`}
+                    className={`fixed inset-y-0 left-0 z-50 mt-16 w-64 transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} border-r border-gray-200 bg-white/80 backdrop-blur-lg dark:border-gray-700 dark:bg-gray-800/80`}
                 >
-                    <div className="px-4 py-6">
-                        <nav className="space-y-2">
-                            <NavLink
-                                href={route('dashboard')}
-                                active={route().current('dashboard')}
-                                className="flex items-center rounded-md px-4 py-2 text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                    <nav className="space-y-1 px-4 py-6">
+                        {navItems.map((item) => (
+                            <Link
+                                key={item.label}
+                                href={item.href}
+                                className={`flex items-center rounded-lg px-4 py-3 transition-all duration-200 ${
+                                    item.active
+                                        ? 'bg-blue-50 font-medium text-blue-700 dark:bg-gray-700 dark:text-white'
+                                        : 'text-gray-700 hover:bg-blue-50 hover:text-blue-700 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white'
+                                }`}
                             >
-                                <svg
-                                    className="mr-3 h-5 w-5"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-                                    />
-                                </svg>
-                                Dashboard
-                            </NavLink>
-                            <NavLink
-                                href={route('programmes.index')}
-                                active={route().current('programmes')}
-                                className="flex items-center rounded-md px-4 py-2 text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-                            >
-                                <svg
-                                    className="mr-3 h-5 w-5"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                                    />
-                                </svg>
-                                Programmes
-                            </NavLink>
-                            <NavLink
-                                href={route('dashboard')}
-                                active={route().current('dashboard')}
-                                className="flex items-center rounded-md px-4 py-2 text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-                            >
-                                <svg
-                                    className="mr-3 h-5 w-5"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                                    />
-                                </svg>
-                                Classes
-                            </NavLink>
-                            <NavLink
-                                href={route('dashboard')}
-                                active={route().current('dashboard')}
-                                className="flex items-center rounded-md px-4 py-2 text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-                            >
-                                <svg
-                                    className="mr-3 h-5 w-5"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                                    />
-                                </svg>
-                                Matières
-                            </NavLink>
-                        </nav>
-                    </div>
+                                <item.icon className="mr-3 h-5 w-5" />
+                                {item.label}
+                            </Link>
+                        ))}
+                    </nav>
                 </aside>
 
-                <main className="max-h-screen max-w-full flex-1 overflow-x-hidden overflow-y-scroll">
+                <main
+                    className={`flex-1 overflow-y-auto transition-all duration-300 ease-in-out ${sidebarOpen ? 'ml-64' : 'ml-0'}`}
+                >
                     {header && (
-                        <header className="bg-white shadow dark:bg-gray-800">
+                        <header className="bg-white/80 shadow backdrop-blur-lg dark:bg-gray-800/80">
                             <div className="mx-auto px-4 py-6 sm:px-6 lg:px-8">
                                 {header}
                             </div>
                         </header>
                     )}
                     <div className="mx-auto px-4 py-8 sm:px-6 lg:px-8">
-                        {children}
+                        <div className="rounded-lg bg-white/80 p-6 shadow-lg backdrop-blur-lg dark:bg-gray-800/80">
+                            {children}
+                        </div>
                     </div>
                 </main>
             </div>
+
+            <FlashMessage />
         </div>
     );
 }

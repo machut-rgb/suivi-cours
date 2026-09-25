@@ -9,6 +9,8 @@ class Classe extends Model
 {
     use HasFactory;
 
+    protected $table = 'classes';
+
     protected $fillable = ['name', 'parcours_id'];
 
     public function parcours()
@@ -19,5 +21,10 @@ class Classe extends Model
     public function matieres()
     {
         return $this->hasMany(Matiere::class);
+    }
+
+    public function users()
+    {
+        return $this->hasMany(User::class);
     }
 }

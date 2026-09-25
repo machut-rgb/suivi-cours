@@ -20,5 +20,4 @@ class Programme extends Model
     {
         return $this->hasMany(Chapitre::class);
     }
-
 }

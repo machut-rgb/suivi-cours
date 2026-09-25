@@ -1,82 +1,111 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Models\Activite;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use App\Models\Chapitre;
+use App\Models\Programme;
+use App\Services\ProgressionService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class ActiviteController extends Controller
 {
-    use AuthorizesRequests;
-    public function __construct()
-    {
-        $this->authorizeResource(Activite::class, 'activite');
-    }
-
     /**
-     * Afficher la liste des activités.
+     * Tableau de bord du délégué : programmes de sa classe et ses rapports.
      */
-    public function index()
+    public function index(Request $request, ProgressionService $progression): Response
     {
-        $activites = Activite::with('programme.matiere.classe', 'user')->get();
-        return response()->json($activites);
-    }
+        $user = $request->user()->load('classe.parcours');
 
-    /**
-     * Afficher une activité spécifique.
-     */
-    public function show(Activite $activite)
-    {
-        $activite->load('programme.matiere.classe', 'user');
-        return response()->json($activite);
-    }
+        $programmes = Programme::whereHas('matiere', fn ($q) => $q->where('classe_id', $user->classe_id))
+            ->with(['matiere:id,name,classe_id', 'chapitres' => fn ($q) => $q->orderBy('id')])
+            ->get()
+            ->sortBy('matiere.name')
+            ->values();
 
-    /**
-     * Créer une nouvelle activité.
-     */
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'programme_id' => 'required|exists:programmes,id',
-            'chapitre_aborde' => 'required|string',
-            'details' => 'nullable|string',
-            'date' => 'required|date',
+        $programmes->each(fn (Programme $p) => $p->setAttribute('progression', $progression->percentage($p)));
+
+        $activites = $user->activites()
+            ->with('chapitre:id,title,programme_id,isFinished', 'chapitre.programme:id,matiere_id', 'chapitre.programme.matiere:id,name')
+            ->orderByDesc('date')
+            ->orderByDesc('id')
+            ->get();
+
+        return Inertia::render('Delegue/Dashboard', [
+            'title' => 'Tableau de Bord - Délégué',
+            'classe' => $user->classe,
+            'programmes' => $programmes,
+            'activites' => $activites,
         ]);
-
-        $activite = Activite::create([
-            'programme_id' => $validated['programme_id'],
-            'user_id' => Auth::id(),
-            'chapitre_aborde' => $validated['chapitre_aborde'],
-            'details' => $validated['details'],
-            'date' => $validated['date'],
-        ]);
-
-        return response()->json($activite, 201);
     }
 
-    /**
-     * Mettre à jour une activité existante.
-     */
-    public function update(Request $request, Activite $activite)
+    public function store(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'programme_id' => 'required|exists:programmes,id',
-            'chapitre_aborde' => 'required|string',
-            'details' => 'nullable|string',
-            'date' => 'required|date',
-        ]);
+        $data = $this->validated($request);
+        $chapitre = Chapitre::with('programme.matiere')->findOrFail($data['chapitre_id']);
+        Gate::authorize('create', [Activite::class, $chapitre]);
 
-        $activite->update($validated);
-        return response()->json($activite);
+        DB::transaction(function () use ($request, $data, $chapitre) {
+            $request->user()->activites()->create([
+                'chapitre_id' => $chapitre->id,
+                'note' => $data['note'],
+                'date' => $data['date'],
+            ]);
+            $this->markFinishedIfRequested($chapitre, $data);
+        });
+
+        return back()->with('success', 'Rapport enregistré.');
     }
 
-    /**
-     * Supprimer une activité.
-     */
-    public function destroy(Activite $activite)
+    public function update(Request $request, Activite $activite): RedirectResponse
     {
+        $data = $this->validated($request);
+        $chapitre = Chapitre::with('programme.matiere')->findOrFail($data['chapitre_id']);
+        Gate::authorize('update', [$activite, $chapitre]);
+
+        DB::transaction(function () use ($activite, $data, $chapitre) {
+            $activite->update([
+                'chapitre_id' => $chapitre->id,
+                'note' => $data['note'],
+                'date' => $data['date'],
+            ]);
+            $this->markFinishedIfRequested($chapitre, $data);
+        });
+
+        return back()->with('success', 'Rapport modifié.');
+    }
+
+    public function destroy(Activite $activite): RedirectResponse
+    {
+        Gate::authorize('delete', $activite);
         $activite->delete();
-        return response()->json(null, 204);
+
+        return back()->with('success', 'Rapport supprimé.');
+    }
+
+    private function validated(Request $request): array
+    {
+        return $request->validate([
+            'chapitre_id' => 'required|integer|exists:chapitres,id',
+            'note' => 'required|string|max:2000',
+            'date' => 'required|date|before_or_equal:today',
+            'mark_finished' => 'sometimes|boolean',
+        ]);
+    }
+
+    /**
+     * A délégué can close a chapter when reporting on it; only a responsable can reopen one.
+     */
+    private function markFinishedIfRequested(Chapitre $chapitre, array $data): void
+    {
+        if (! empty($data['mark_finished']) && ! $chapitre->isFinished) {
+            $chapitre->isFinished = true;
+            $chapitre->save();
+        }
     }
 }

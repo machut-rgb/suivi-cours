@@ -10,12 +10,13 @@ class Matiere extends Model
     use HasFactory;
 
     protected $fillable = ['name', 'classe_id'];
-    public function classe()
-{
-    return $this->belongsTo(Classe::class, 'classe_id'); // Vérifiez le nom de la colonne
-}
 
-    public function programmes()
+    public function classe()
+    {
+        return $this->belongsTo(Classe::class);
+    }
+
+    public function programme()
     {
         return $this->hasOne(Programme::class);
     }

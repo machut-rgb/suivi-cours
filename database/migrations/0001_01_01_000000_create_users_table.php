@@ -18,6 +18,7 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('role')->default('delegue');
             $table->string('password');
+            // classe_id is added in a later migration, once the classes table exists.
             $table->rememberToken();
             $table->timestamps();
         });

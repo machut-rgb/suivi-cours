@@ -1,70 +1,48 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Models\Matiere;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+
 class MatiereController extends Controller
 {
-    use AuthorizesRequests;
-
-    public function __construct()
+    /**
+     * Chaque matière a exactement un programme : il est créé en même temps qu'elle.
+     */
+    public function store(Request $request): RedirectResponse
     {
-        $this->authorizeResource(Matiere::class, 'matiere');
+        $data = $this->validated($request);
+
+        DB::transaction(function () use ($data) {
+            $matiere = Matiere::create($data);
+            $matiere->programme()->create(['name' => 'Programme de '.$matiere->name]);
+        });
+
+        return back()->with('success', 'Matière et programme créés.');
     }
 
-    /**
-     * Afficher la liste des matières.
-     */
-    public function index()
+    public function update(Request $request, Matiere $matiere): RedirectResponse
     {
-        $matieres = Matiere::with('classe', 'programmes')->get();
-        return response()->json($matieres);
+        $matiere->update($this->validated($request));
+
+        return back()->with('success', 'Matière modifiée.');
     }
 
-    /**
-     * Afficher une matière spécifique.
-     */
-    public function show(Matiere $matiere)
-    {
-        $matiere->load('classe', 'programmes');
-        return response()->json($matiere);
-    }
-
-    /**
-     * Créer une nouvelle matière.
-     */
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'class_id' => 'required|exists:classes,id',
-        ]);
-
-        $matiere = Matiere::create($validated);
-        return response()->json($matiere, 201);
-    }
-
-    /**
-     * Mettre à jour une matière existante.
-     */
-    public function update(Request $request, Matiere $matiere)
-    {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'class_id' => 'required|exists:classes,id',
-        ]);
-
-        $matiere->update($validated);
-        return response()->json($matiere);
-    }
-
-    /**
-     * Supprimer une matière.
-     */
-    public function destroy(Matiere $matiere)
+    public function destroy(Matiere $matiere): RedirectResponse
     {
         $matiere->delete();
-        return response()->json(null, 204);
+
+        return back()->with('success', 'Matière supprimée.');
+    }
+
+    private function validated(Request $request): array
+    {
+        return $request->validate([
+            'name' => 'required|string|max:255',
+            'classe_id' => 'required|integer|exists:classes,id',
+        ]);
     }
 }
